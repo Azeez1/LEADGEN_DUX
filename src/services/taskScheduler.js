@@ -10,12 +10,17 @@ class TaskScheduler {
     }
 
     async loadScheduledTasks() {
-        const { data: tasks } = await this.supabase
+        const { data: tasks, error } = await this.supabase
             .from('scheduled_tasks')
             .select('*')
             .eq('active', true);
 
-        tasks.forEach(task => {
+        if (error) {
+            console.error('Failed to load scheduled tasks', error);
+            return;
+        }
+
+        (tasks || []).forEach(task => {
             this.scheduleTask(task);
         });
     }
