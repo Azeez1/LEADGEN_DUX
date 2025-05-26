@@ -37,3 +37,17 @@ src/
 The skeleton references several external services and frameworks including
 OpenAI, Google APIs, Playwright, Apify, Bull/Redis, Supabase and Nodemailer.
 All service modules currently contain placeholder functions to be implemented.
+
+## Frontend Chat UI
+
+A basic chat-like interface is available under the `frontend` directory. It uses Next.js and provides a minimal chat window and message input box.
+
+### Running the frontend
+
+```bash
+cd frontend
+npm install # install dependencies
+npm run dev
+```
+
+This will start the Next.js development server on <http://localhost:3000>.
