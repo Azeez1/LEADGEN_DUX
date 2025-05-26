@@ -6,6 +6,7 @@ function loadConfig() {
     logLevel: process.env.LOG_LEVEL || 'info',
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+    supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
     openAIApiKey: process.env.OPENAI_API_KEY,
     googleSearchApiKey: process.env.GOOGLE_SEARCH_API_KEY,
     googleSearchEngineId: process.env.GOOGLE_SEARCH_ENGINE_ID,
