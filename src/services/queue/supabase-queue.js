@@ -5,8 +5,37 @@
 
 const logger = require('../../utils/logger');
 
+// Flag so we only warn once if the table is missing
+let jobsTableAvailable = null;
+
+async function ensureJobsTable(supabase) {
+  if (jobsTableAvailable !== null) return jobsTableAvailable;
+
+  const { error } = await supabase.from('jobs').select('id').limit(1);
+  if (error && error.code === '42P01') {
+    logger.error(
+      'Supabase table "jobs" does not exist. Create it with:\n' +
+        'CREATE TABLE jobs (\n' +
+        '    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n' +
+        '    queue TEXT NOT NULL,\n' +
+        '    payload JSONB,\n' +
+        "    status TEXT NOT NULL DEFAULT 'pending',\n" +
+        '    created_at TIMESTAMPTZ DEFAULT NOW()\n' +
+        ');'
+    );
+    jobsTableAvailable = false;
+  } else {
+    jobsTableAvailable = true;
+  }
+
+  return jobsTableAvailable;
+}
+
 function createQueue(name, supabase) {
   async function add(data) {
+    if (!(await ensureJobsTable(supabase))) {
+      throw new Error('jobs table missing');
+    }
     const { error } = await supabase.from('jobs').insert({
       queue: name,
       payload: data,
@@ -21,6 +50,9 @@ function createQueue(name, supabase) {
   // Polling processor. intervalMs defines how frequently to check for jobs.
   function process(handler, intervalMs = 1000) {
     setInterval(async () => {
+      if (!(await ensureJobsTable(supabase))) {
+        return;
+      }
       const { data: jobs, error } = await supabase
         .from('jobs')
         .select('*')
