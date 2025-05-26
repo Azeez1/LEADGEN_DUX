@@ -1,5 +1,5 @@
-import { LeadAssistant } from '@/services/aiAssistant';
-import { ConversationManager } from '@/services/conversationManager';
+import { LeadAssistant } from '../../../../../src/services/aiAssistant';
+import { ConversationManager } from '../../../../../src/services/conversationManager';
 
 const assistant = new LeadAssistant();
 const conversationManager = new ConversationManager(assistant);
