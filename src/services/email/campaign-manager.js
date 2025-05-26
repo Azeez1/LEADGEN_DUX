@@ -16,7 +16,14 @@ async function scheduleCampaign(lead, emails) {
     return null;
   }
 
-  // TODO: push each email in the sequence to emailQueue.add()
+  // Push each email in the provided sequence onto the queue.
+  // The emails array is expected to contain objects that Nodemailer can
+  // consume directly. We attach the lead id so the worker knows which
+  // lead the message belongs to.
+  for (const email of emails) {
+    await emailQueue.add({ ...email, leadId: lead.id });
+  }
+
   return lead.id;
 }
 
