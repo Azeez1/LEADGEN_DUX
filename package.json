@@ -1,0 +1,28 @@
+{
+  "name": "leadgen_dux",
+  "version": "0.1.0",
+  "description": "Skeleton for AI Lead Generation Agent",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "openai": "^4.20.0",
+    "playwright": "^1.40.0",
+    "bull": "^4.11.0",
+    "redis": "^4.6.0",
+    "apify-client": "^2.7.0",
+    "googleapis": "^128.0.0",
+    "nodemailer": "^6.9.0",
+    "zod": "^3.22.0",
+    "winston": "^3.11.0",
+    "dotenv": "^16.3.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "eslint": "^8.54.0",
+    "typescript": "^5.3.0"
+  }
+}
