@@ -3,7 +3,7 @@ const { fetchDynamicContent } = require('../services/research/browser-automation
 const { determineStrategy } = require('../services/research/strategy-engine');
 const logger = require('../utils/logger');
 
-// Worker executed from a Bull queue to perform research tasks based on lead data
+// Worker executed from the Supabase-backed queue to perform research tasks based on lead data
 module.exports = async function researchWorker(leadData) {
   logger.info('Researching lead', leadData);
 

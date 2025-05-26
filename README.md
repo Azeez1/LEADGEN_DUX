@@ -35,7 +35,7 @@ src/
 ```
 
 The skeleton references several external services and frameworks including
-OpenAI, Google APIs, Playwright, Apify, Bull/Redis, Supabase and Nodemailer.
+OpenAI, Google APIs, Playwright, Apify, Supabase and Nodemailer.
 All service modules currently contain placeholder functions to be implemented.
 
 ## Frontend Chat UI

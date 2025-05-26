@@ -1,4 +1,5 @@
-// Simple in-memory rate limiter. For production use, store counts in Redis.
+// Simple in-memory rate limiter. For production use, store counts in a
+// persistent system such as Supabase.
 class RateLimiter {
   constructor(limit) {
     this.limit = limit;

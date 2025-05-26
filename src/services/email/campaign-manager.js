@@ -1,9 +1,16 @@
-const Queue = require('bull');
-const emailQueue = new Queue('email', process.env.REDIS_URL);
+const { createQueue } = require('../queue/supabase-queue');
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
+
+const emailQueue = createQueue('email', supabase);
 const { isLeadQualified, calculateLeadScore, MINIMUM_SCORE_THRESHOLD } = require('../../utils/lead-quality');
 const logger = require('../../utils/logger');
 
-// Schedule a sequence of emails for a lead using Bull queue.
+// Schedule a sequence of emails for a lead using the Supabase-backed queue.
 async function scheduleCampaign(lead, emails) {
   if (!isLeadQualified(lead)) {
     logger.warn('Lead failed qualification check, campaign not scheduled');

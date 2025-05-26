@@ -13,8 +13,7 @@ function loadConfig() {
     apifyToken: process.env.APIFY_API_TOKEN,
     gmailClientId: process.env.GMAIL_CLIENT_ID,
     gmailClientSecret: process.env.GMAIL_CLIENT_SECRET,
-    gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN,
-    redisUrl: process.env.REDIS_URL
+    gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN
   };
 }
 
