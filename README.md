@@ -1,6 +1,6 @@
 # LEADGEN_DUX
 
-This repository contains a skeleton implementation of the **AI Lead Agent** described in `Agent.md`. It provides the initial project structure and placeholder modules for future development.
+This repository contains a functional implementation of the **AI Lead Agent** described in `Agent.md`.  After providing valid API credentials the services can be executed directly without additional coding.
 
 ## Getting Started
 
@@ -34,9 +34,8 @@ src/
   index.js
 ```
 
-The skeleton references several external services and frameworks including
-OpenAI, Google APIs, Playwright, Apify, Supabase and Nodemailer.
-All service modules currently contain placeholder functions to be implemented.
+The code integrates with external services including OpenAI, Google APIs, Playwright, Apify, Supabase and Nodemailer.
+All core modules provide working implementations so the application can run once the required credentials are supplied.
 
 ## Frontend Chat UI
 
