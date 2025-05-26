@@ -79,7 +79,7 @@ def is_lead_qualified(lead_data):
                                 │
                     ┌───────────┴───────────┐
                     │   Queue/Job System    │
-                    │  (Redis/Bull Queue)   │
+                    │  (Supabase Queue)     │
                     └───────────┬───────────┘
                                 │
                     ┌───────────┴───────────┐
@@ -429,8 +429,6 @@ GMAIL_REFRESH_TOKEN=xxxxx
 FROM_EMAIL=outreach@company.com
 REPLY_TO_EMAIL=replies@company.com
 
-# Redis Queue
-REDIS_URL=redis://localhost:6379
 
 # Application
 NODE_ENV=development
