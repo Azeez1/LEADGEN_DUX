@@ -67,6 +67,47 @@ class ProactiveAgent {
         });
         return response.choices[0].message.content;
     }
+
+    async getActiveCampaigns() {
+        const { data } = await this.assistant.supabase
+            .from('campaigns')
+            .select('*')
+            .eq('status', 'active');
+        return data || [];
+    }
+
+    async analyzeCampaignPerformance(campaign) {
+        const { data } = await this.assistant.supabase
+            .from('analytics_metrics')
+            .select('metric,value');
+        const metrics = (data || []).reduce((acc, row) => {
+            acc[row.metric] = row.value;
+            return acc;
+        }, {});
+        const needs = (metrics.reply_rate || 0) < 0.05;
+        return {
+            needs_attention: needs,
+            recommendation: needs ? 'Consider revising email content' : '',
+            suggested_actions: needs ? ['pause campaign', 'update messaging'] : []
+        };
+    }
+
+    async checkNewLeads() {
+        const { data } = await this.assistant.supabase
+            .from('leads')
+            .select('id')
+            .eq('status', 'new');
+        if (data && data.length) {
+            await this.notificationService.send({
+                type: 'new_leads',
+                title: 'New leads available',
+                content: `You have ${data.length} new leads to review.`,
+                priority: 'medium',
+                actionable: true,
+                actions: [{ label: 'View Leads', action: 'navigate', target: '/leads' }]
+            });
+        }
+    }
 }
 
 module.exports = { ProactiveAgent };

@@ -1,5 +1,8 @@
 const OpenAI = require('openai');
 const { createClient } = require('@supabase/supabase-js');
+const { createQueue } = require("./queue/supabase-queue");
+const { scheduleCampaign: scheduleLeadCampaign } = require("./email/campaign-manager");
+const { TaskScheduler } = require("./taskScheduler");
 
 class LeadAssistant {
     constructor() {
@@ -12,6 +15,9 @@ class LeadAssistant {
         );
         this.assistant = null;
         this.tools = this.defineTools();
+        this.researchQueue = createQueue("research", this.supabase);
+        this.emailQueue = createQueue("email", this.supabase);
+        this.taskScheduler = new TaskScheduler(this.supabase, this);
     }
 
     async initialize() {
@@ -209,6 +215,34 @@ Always communicate in a professional but friendly manner, like a trusted team me
                 status: l.status
             }))
         };
+    }
+    async scheduleCampaign({ lead_ids, campaign_type, schedule_time }) {
+        const { data, error } = await this.supabase.from("leads").select("*").in("id", lead_ids);
+        if (error) throw error;
+        for (const lead of data) {
+            const emails = [{ to: lead.email, subject: `Hello ${lead.name}`, text: `Hi ${lead.name}, let's connect!` }];
+            await scheduleLeadCampaign(lead, emails);
+        }
+        return { scheduled: data.length };
+    }
+
+    async getAnalytics({ metric_type }) {
+        if (metric_type !== "overview") {
+            throw new Error("Only overview metrics supported");
+        }
+        const { data, error } = await this.supabase.from("analytics_metrics").select("metric,value");
+        if (error) throw error;
+        return data.reduce((acc, row) => { acc[row.metric] = row.value; return acc; }, {});
+    }
+
+    async researchLead({ lead_id, research_depth }) {
+        await this.researchQueue.add({ leadId: lead_id, depth: research_depth });
+        return { queued: true };
+    }
+
+    async setReminder({ task_type, schedule, description }) {
+        const task = await this.taskScheduler.createTask({ task_type, schedule, description });
+        return { task_id: task.id };
     }
 }
 
