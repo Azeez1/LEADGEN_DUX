@@ -793,3 +793,1115 @@ project-root/
 ---
 
 This expanded documentation provides your AI coding assistant with comprehensive implementation details, code examples, error handling strategies, and architectural decisions needed to build the AI Lead Agent effectively.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# AI Agent Interface Architecture - Conversational Lead Assistant
+
+## 1. Core Architecture Overview
+
+### System Components
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   Frontend Chat Interface                    │
+│                    (Next.js + Tailwind)                     │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+┌─────────────────────────┴───────────────────────────────────┐
+│                    WebSocket Connection                      │
+│                  (Supabase Realtime)                        │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+┌─────────────────────────┴───────────────────────────────────┐
+│                  AI Agent Orchestrator                       │
+│                    (Node.js Backend)                        │
+├─────────────────────────────────────────────────────────────┤
+│  OpenAI Assistant  │  LangChain Agent  │  Tool Executor    │
+│   (Conversation)   │  (Task Planning)  │  (Actions)        │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+┌─────────────────────────┴───────────────────────────────────┐
+│                     Integrated Tools                         │
+├──────────┬──────────┬──────────┬──────────┬────────────────┤
+│ Supabase │  Email   │ Research │ Analytics│ Task Scheduler │
+│    DB    │   API    │  Tools   │  Engine  │   (Cron)      │
+└──────────┴──────────┴──────────┴──────────┴────────────────┘
+```
+
+## 2. AI Agent Implementation Using OpenAI Assistant API
+
+### 2.1 Core Agent Setup
+```javascript
+// src/services/aiAssistant.js
+const OpenAI = require('openai');
+const { createClient } = require('@supabase/supabase-js');
+
+class LeadAssistant {
+    constructor() {
+        this.openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY
+        });
+        this.supabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_KEY
+        );
+        this.assistant = null;
+        this.tools = this.defineTools();
+    }
+
+    async initialize() {
+        // Create or retrieve the assistant
+        this.assistant = await this.openai.beta.assistants.create({
+            name: "Lead Generation Partner",
+            instructions: `You are an intelligent lead generation assistant with the personality of a knowledgeable, proactive colleague. You help manage lead research, email campaigns, and provide insights about the lead database.
+
+Your capabilities include:
+1. Querying and analyzing the lead database
+2. Scheduling and managing email campaigns
+3. Conducting research on leads
+4. Providing strategic insights and recommendations
+5. Tracking campaign performance
+
+Always communicate in a professional but friendly manner, like a trusted team member. Proactively suggest improvements and highlight important information.`,
+            tools: this.tools,
+            model: "gpt-4-turbo-preview"
+        });
+    }
+
+    defineTools() {
+        return [
+            {
+                type: "function",
+                function: {
+                    name: "query_leads",
+                    description: "Query the lead database with filters",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            status: {
+                                type: "string",
+                                enum: ["new", "researched", "emailed", "replied"],
+                                description: "Filter by lead status"
+                            },
+                            limit: {
+                                type: "number",
+                                description: "Number of results to return"
+                            },
+                            search: {
+                                type: "string",
+                                description: "Search term for name, email, or company"
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "schedule_campaign",
+                    description: "Schedule an email campaign for specific leads",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            lead_ids: {
+                                type: "array",
+                                items: { type: "string" },
+                                description: "Array of lead IDs to include"
+                            },
+                            campaign_type: {
+                                type: "string",
+                                enum: ["immediate", "scheduled", "drip"],
+                                description: "Type of campaign"
+                            },
+                            schedule_time: {
+                                type: "string",
+                                description: "ISO timestamp for scheduled campaigns"
+                            }
+                        },
+                        required: ["lead_ids", "campaign_type"]
+                    }
+                }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "get_analytics",
+                    description: "Get campaign analytics and performance metrics",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            metric_type: {
+                                type: "string",
+                                enum: ["overview", "campaign", "lead", "email"],
+                                description: "Type of analytics to retrieve"
+                            },
+                            time_range: {
+                                type: "string",
+                                enum: ["today", "week", "month", "all"],
+                                description: "Time range for analytics"
+                            }
+                        },
+                        required: ["metric_type"]
+                    }
+                }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "research_lead",
+                    description: "Conduct research on a specific lead",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            lead_id: {
+                                type: "string",
+                                description: "ID of the lead to research"
+                            },
+                            research_depth: {
+                                type: "string",
+                                enum: ["quick", "standard", "deep"],
+                                description: "How thorough the research should be"
+                            }
+                        },
+                        required: ["lead_id"]
+                    }
+                }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "set_reminder",
+                    description: "Set a reminder or scheduled task",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            task_type: {
+                                type: "string",
+                                description: "Type of task to schedule"
+                            },
+                            schedule: {
+                                type: "string",
+                                description: "Cron expression or ISO timestamp"
+                            },
+                            description: {
+                                type: "string",
+                                description: "Task description"
+                            }
+                        },
+                        required: ["task_type", "schedule"]
+                    }
+                }
+            }
+        ];
+    }
+
+    async handleToolCall(toolCall) {
+        const { name, arguments: args } = toolCall.function;
+        const params = JSON.parse(args);
+
+        switch (name) {
+            case 'query_leads':
+                return await this.queryLeads(params);
+            case 'schedule_campaign':
+                return await this.scheduleCampaign(params);
+            case 'get_analytics':
+                return await this.getAnalytics(params);
+            case 'research_lead':
+                return await this.researchLead(params);
+            case 'set_reminder':
+                return await this.setReminder(params);
+            default:
+                throw new Error(`Unknown tool: ${name}`);
+        }
+    }
+
+    // Tool implementations
+    async queryLeads({ status, limit = 10, search }) {
+        let query = this.supabase.from('leads').select('*');
+        
+        if (status) query = query.eq('status', status);
+        if (search) {
+            query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%,company.ilike.%${search}%`);
+        }
+        
+        const { data, error } = await query.limit(limit);
+        
+        if (error) throw error;
+        return {
+            count: data.length,
+            leads: data,
+            summary: this.generateLeadSummary(data)
+        };
+    }
+
+    generateLeadSummary(leads) {
+        const statusCounts = leads.reduce((acc, lead) => {
+            acc[lead.status] = (acc[lead.status] || 0) + 1;
+            return acc;
+        }, {});
+
+        return {
+            total: leads.length,
+            by_status: statusCounts,
+            recent: leads.slice(0, 3).map(l => ({
+                name: l.name,
+                company: l.company,
+                status: l.status
+            }))
+        };
+    }
+}
+```
+
+### 2.2 Conversation Management with Context
+```javascript
+// src/services/conversationManager.js
+class ConversationManager {
+    constructor(assistant) {
+        this.assistant = assistant;
+        this.threads = new Map(); // userId -> threadId
+    }
+
+    async getOrCreateThread(userId) {
+        if (this.threads.has(userId)) {
+            return this.threads.get(userId);
+        }
+
+        const thread = await this.assistant.openai.beta.threads.create({
+            metadata: {
+                user_id: userId,
+                created_at: new Date().toISOString()
+            }
+        });
+
+        this.threads.set(userId, thread.id);
+        
+        // Persist to database for recovery
+        await this.saveThreadMapping(userId, thread.id);
+        
+        return thread.id;
+    }
+
+    async sendMessage(userId, message) {
+        const threadId = await this.getOrCreateThread(userId);
+        
+        // Add user message to thread
+        await this.assistant.openai.beta.threads.messages.create(threadId, {
+            role: "user",
+            content: message
+        });
+
+        // Run the assistant
+        const run = await this.assistant.openai.beta.threads.runs.create(threadId, {
+            assistant_id: this.assistant.assistant.id
+        });
+
+        // Wait for completion and handle tool calls
+        return await this.waitForCompletion(threadId, run.id);
+    }
+
+    async waitForCompletion(threadId, runId) {
+        while (true) {
+            const run = await this.assistant.openai.beta.threads.runs.retrieve(
+                threadId,
+                runId
+            );
+
+            if (run.status === 'completed') {
+                return await this.getLatestMessage(threadId);
+            }
+
+            if (run.status === 'requires_action') {
+                await this.handleToolCalls(threadId, runId, run);
+            }
+
+            if (run.status === 'failed' || run.status === 'cancelled') {
+                throw new Error(`Run ${run.status}: ${run.last_error?.message}`);
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+
+    async handleToolCalls(threadId, runId, run) {
+        const toolOutputs = [];
+
+        for (const toolCall of run.required_action.submit_tool_outputs.tool_calls) {
+            try {
+                const result = await this.assistant.handleToolCall(toolCall);
+                toolOutputs.push({
+                    tool_call_id: toolCall.id,
+                    output: JSON.stringify(result)
+                });
+            } catch (error) {
+                toolOutputs.push({
+                    tool_call_id: toolCall.id,
+                    output: JSON.stringify({ error: error.message })
+                });
+            }
+        }
+
+        await this.assistant.openai.beta.threads.runs.submitToolOutputs(
+            threadId,
+            runId,
+            { tool_outputs: toolOutputs }
+        );
+    }
+
+    async getLatestMessage(threadId) {
+        const messages = await this.assistant.openai.beta.threads.messages.list(
+            threadId,
+            { limit: 1 }
+        );
+        
+        return messages.data[0];
+    }
+}
+```
+
+## 3. Proactive Agent Behaviors
+
+### 3.1 Background Agent Worker
+```javascript
+// src/workers/proactiveAgent.js
+const cron = require('node-cron');
+
+class ProactiveAgent {
+    constructor(assistant, notificationService) {
+        this.assistant = assistant;
+        this.notificationService = notificationService;
+        this.setupProactiveBehaviors();
+    }
+
+    setupProactiveBehaviors() {
+        // Morning briefing
+        cron.schedule('0 9 * * *', async () => {
+            await this.morningBriefing();
+        });
+
+        // Hourly campaign check
+        cron.schedule('0 * * * *', async () => {
+            await this.checkCampaignPerformance();
+        });
+
+        // Lead quality check
+        cron.schedule('0 */4 * * *', async () => {
+            await this.checkNewLeads();
+        });
+    }
+
+    async morningBriefing() {
+        const analytics = await this.assistant.getAnalytics({
+            metric_type: 'overview',
+            time_range: 'today'
+        });
+
+        const insights = await this.generateInsights(analytics);
+        
+        await this.notificationService.send({
+            type: 'morning_briefing',
+            title: "Good morning! Here's your lead generation update",
+            content: insights,
+            priority: 'medium'
+        });
+    }
+
+    async checkCampaignPerformance() {
+        const campaigns = await this.getActiveCampaigns();
+        
+        for (const campaign of campaigns) {
+            const performance = await this.analyzeCampaignPerformance(campaign);
+            
+            if (performance.needs_attention) {
+                await this.notificationService.send({
+                    type: 'campaign_alert',
+                    title: `Campaign "${campaign.name}" needs attention`,
+                    content: performance.recommendation,
+                    priority: 'high',
+                    actionable: true,
+                    actions: performance.suggested_actions
+                });
+            }
+        }
+    }
+
+    async generateInsights(data) {
+        // Use AI to generate natural language insights
+        const prompt = `Generate a brief, friendly morning update based on this data: ${JSON.stringify(data)}`;
+        
+        const response = await this.assistant.openai.chat.completions.create({
+            model: "gpt-4-turbo-preview",
+            messages: [
+                {
+                    role: "system",
+                    content: "You are a helpful colleague providing a morning briefing. Be concise, highlight important items, and suggest 2-3 actionable items for the day."
+                },
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ]
+        });
+
+        return response.choices[0].message.content;
+    }
+}
+```
+
+## 4. Frontend Chat Interface
+
+### 4.1 Next.js Chat Component
+```javascript
+// app/components/AgentChat.jsx
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { createClient } from '@supabase/supabase-js';
+
+export default function AgentChat() {
+    const [messages, setMessages] = useState([]);
+    const [input, setInput] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
+    const [isAgentOnline, setIsAgentOnline] = useState(true);
+    const messagesEndRef = useRef(null);
+    
+    const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+
+    useEffect(() => {
+        // Subscribe to real-time notifications
+        const channel = supabase
+            .channel('agent-notifications')
+            .on('broadcast', { event: 'notification' }, (payload) => {
+                handleNotification(payload);
+            })
+            .subscribe();
+
+        // Load conversation history
+        loadConversationHistory();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
+
+    const handleNotification = (payload) => {
+        // Add proactive agent messages
+        if (payload.type === 'agent_message') {
+            setMessages(prev => [...prev, {
+                id: Date.now(),
+                role: 'assistant',
+                content: payload.content,
+                timestamp: new Date(),
+                type: 'proactive'
+            }]);
+        }
+    };
+
+    const sendMessage = async () => {
+        if (!input.trim()) return;
+
+        const userMessage = {
+            id: Date.now(),
+            role: 'user',
+            content: input,
+            timestamp: new Date()
+        };
+
+        setMessages(prev => [...prev, userMessage]);
+        setInput('');
+        setIsTyping(true);
+
+        try {
+            const response = await fetch('/api/agent/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: input })
+            });
+
+            const data = await response.json();
+
+            setMessages(prev => [...prev, {
+                id: Date.now(),
+                role: 'assistant',
+                content: data.message,
+                timestamp: new Date(),
+                actions: data.actions
+            }]);
+        } catch (error) {
+            console.error('Error sending message:', error);
+        } finally {
+            setIsTyping(false);
+        }
+    };
+
+    const handleQuickAction = async (action) => {
+        // Handle quick action buttons
+        await sendMessage(action.prompt);
+    };
+
+    return (
+        <div className="flex flex-col h-screen bg-gray-50">
+            {/* Header */}
+            <div className="bg-white shadow-sm border-b px-6 py-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                        <div className={`w-3 h-3 rounded-full ${isAgentOnline ? 'bg-green-500' : 'bg-gray-300'}`} />
+                        <h2 className="text-lg font-semibold">Lead Generation Assistant</h2>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                        AI-powered partner for your outreach
+                    </div>
+                </div>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+                {messages.length === 0 && (
+                    <div className="text-center py-12">
+                        <p className="text-gray-500 mb-4">
+                            Hi! I'm your lead generation assistant. How can I help you today?
+                        </p>
+                        <div className="grid grid-cols-2 gap-2 max-w-md mx-auto">
+                            <QuickActionButton
+                                onClick={() => handleQuickAction({ prompt: "Show me today's campaign performance" })}
+                                icon="📊"
+                                text="Today's Performance"
+                            />
+                            <QuickActionButton
+                                onClick={() => handleQuickAction({ prompt: "Find new leads to research" })}
+                                icon="🔍"
+                                text="Find New Leads"
+                            />
+                            <QuickActionButton
+                                onClick={() => handleQuickAction({ prompt: "Schedule a campaign for replied leads" })}
+                                icon="📧"
+                                text="Schedule Campaign"
+                            />
+                            <QuickActionButton
+                                onClick={() => handleQuickAction({ prompt: "What tasks do I have today?" })}
+                                icon="✅"
+                                text="Today's Tasks"
+                            />
+                        </div>
+                    </div>
+                )}
+                
+                {messages.map((message) => (
+                    <Message key={message.id} message={message} />
+                ))}
+                
+                {isTyping && (
+                    <div className="flex items-center space-x-2 text-gray-500">
+                        <div className="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <span className="text-sm">Assistant is typing...</span>
+                    </div>
+                )}
+                
+                <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input */}
+            <div className="bg-white border-t px-6 py-4">
+                <div className="flex space-x-4">
+                    <input
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                        placeholder="Ask about leads, campaigns, or give instructions..."
+                        className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                        onClick={sendMessage}
+                        disabled={!input.trim() || isTyping}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    >
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function Message({ message }) {
+    const isUser = message.role === 'user';
+    
+    return (
+        <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
+            <div className={`max-w-2xl px-4 py-2 rounded-lg ${
+                isUser ? 'bg-blue-600 text-white' : 'bg-white border'
+            } ${message.type === 'proactive' ? 'border-yellow-300' : ''}`}>
+                <div className="whitespace-pre-wrap">{message.content}</div>
+                
+                {message.actions && (
+                    <div className="mt-2 space-y-1">
+                        {message.actions.map((action, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => handleAction(action)}
+                                className="block w-full text-left px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
+                            >
+                                {action.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
+                
+                <div className="text-xs mt-1 opacity-70">
+                    {new Date(message.timestamp).toLocaleTimeString()}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function QuickActionButton({ onClick, icon, text }) {
+    return (
+        <button
+            onClick={onClick}
+            className="flex items-center space-x-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50"
+        >
+            <span className="text-xl">{icon}</span>
+            <span className="text-sm">{text}</span>
+        </button>
+    );
+}
+```
+
+### 4.2 API Route Handler
+```javascript
+// app/api/agent/chat/route.js
+import { LeadAssistant } from '@/services/aiAssistant';
+import { ConversationManager } from '@/services/conversationManager';
+
+const assistant = new LeadAssistant();
+const conversationManager = new ConversationManager(assistant);
+
+// Initialize assistant on first load
+let initialized = false;
+async function ensureInitialized() {
+    if (!initialized) {
+        await assistant.initialize();
+        initialized = true;
+    }
+}
+
+export async function POST(request) {
+    await ensureInitialized();
+    
+    const { message } = await request.json();
+    const userId = request.headers.get('x-user-id') || 'default';
+    
+    try {
+        const response = await conversationManager.sendMessage(userId, message);
+        
+        return Response.json({
+            message: response.content[0].text.value,
+            actions: extractActions(response)
+        });
+    } catch (error) {
+        console.error('Chat error:', error);
+        return Response.json(
+            { error: 'Failed to process message' },
+            { status: 500 }
+        );
+    }
+}
+
+function extractActions(response) {
+    // Extract actionable items from the response
+    // This could be enhanced with more sophisticated parsing
+    const actions = [];
+    
+    if (response.content[0].text.value.includes('campaign')) {
+        actions.push({
+            label: 'View Campaigns',
+            action: 'navigate',
+            target: '/campaigns'
+        });
+    }
+    
+    if (response.content[0].text.value.includes('lead')) {
+        actions.push({
+            label: 'View Leads',
+            action: 'navigate',
+            target: '/leads'
+        });
+    }
+    
+    return actions;
+}
+```
+
+## 5. Task Scheduling and Context Management
+
+### 5.1 Task Scheduler Integration
+```javascript
+// src/services/taskScheduler.js
+const cron = require('node-cron');
+const parser = require('cron-parser');
+
+class TaskScheduler {
+    constructor(supabase, assistant) {
+        this.supabase = supabase;
+        this.assistant = assistant;
+        this.scheduledTasks = new Map();
+        this.loadScheduledTasks();
+    }
+
+    async loadScheduledTasks() {
+        const { data: tasks } = await this.supabase
+            .from('scheduled_tasks')
+            .select('*')
+            .eq('active', true);
+
+        tasks.forEach(task => {
+            this.scheduleTask(task);
+        });
+    }
+
+    async createTask(taskData) {
+        // Validate cron expression or convert natural language
+        const schedule = await this.parseSchedule(taskData.schedule);
+        
+        const { data: task, error } = await this.supabase
+            .from('scheduled_tasks')
+            .insert({
+                ...taskData,
+                cron_expression: schedule,
+                active: true,
+                created_by: 'ai_assistant'
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        this.scheduleTask(task);
+        return task;
+    }
+
+    async parseSchedule(scheduleInput) {
+        // Handle natural language scheduling
+        const naturalLanguagePatterns = {
+            'every morning': '0 9 * * *',
+            'every evening': '0 18 * * *',
+            'every monday': '0 9 * * 1',
+            'twice a day': '0 9,17 * * *',
+            'every hour': '0 * * * *',
+            'every 30 minutes': '*/30 * * * *'
+        };
+
+        const lower = scheduleInput.toLowerCase();
+        
+        // Check for natural language patterns
+        for (const [pattern, cron] of Object.entries(naturalLanguagePatterns)) {
+            if (lower.includes(pattern)) {
+                return cron;
+            }
+        }
+
+        // Try to parse as cron expression
+        try {
+            parser.parseExpression(scheduleInput);
+            return scheduleInput;
+        } catch (error) {
+            // Fall back to AI interpretation
+            return await this.interpretScheduleWithAI(scheduleInput);
+        }
+    }
+
+    scheduleTask(task) {
+        if (this.scheduledTasks.has(task.id)) {
+            this.scheduledTasks.get(task.id).stop();
+        }
+
+        const job = cron.schedule(task.cron_expression, async () => {
+            await this.executeTask(task);
+        });
+
+        this.scheduledTasks.set(task.id, job);
+    }
+
+    async executeTask(task) {
+        console.log(`Executing scheduled task: ${task.description}`);
+        
+        try {
+            // Execute the task based on its type
+            switch (task.task_type) {
+                case 'campaign_check':
+                    await this.assistant.checkCampaignPerformance();
+                    break;
+                case 'lead_research':
+                    await this.assistant.researchNewLeads();
+                    break;
+                case 'send_report':
+                    await this.assistant.generateAndSendReport(task.parameters);
+                    break;
+                case 'custom':
+                    await this.assistant.executeCustomTask(task.parameters);
+                    break;
+            }
+
+            // Log execution
+            await this.supabase
+                .from('task_executions')
+                .insert({
+                    task_id: task.id,
+                    status: 'completed',
+                    executed_at: new Date()
+                });
+
+        } catch (error) {
+            console.error(`Task execution failed: ${error.message}`);
+            
+            await this.supabase
+                .from('task_executions')
+                .insert({
+                    task_id: task.id,
+                    status: 'failed',
+                    error: error.message,
+                    executed_at: new Date()
+                });
+        }
+    }
+}
+```
+
+### 5.2 Context-Aware Task Execution
+```javascript
+// src/services/contextManager.js
+class ContextManager {
+    constructor(supabase) {
+        this.supabase = supabase;
+        this.activeContexts = new Map();
+    }
+
+    async saveContext(userId, context) {
+        const { data, error } = await this.supabase
+            .from('user_contexts')
+            .upsert({
+                user_id: userId,
+                context: context,
+                updated_at: new Date()
+            });
+
+        if (error) throw error;
+        
+        // Update in-memory cache
+        this.activeContexts.set(userId, context);
+    }
+
+    async getContext(userId) {
+        // Check cache first
+        if (this.activeContexts.has(userId)) {
+            return this.activeContexts.get(userId);
+        }
+
+        // Load from database
+        const { data, error } = await this.supabase
+            .from('user_contexts')
+            .select('context')
+            .eq('user_id', userId)
+            .single();
+
+        if (error || !data) {
+            return this.createDefaultContext();
+        }
+
+        this.activeContexts.set(userId, data.context);
+        return data.context;
+    }
+
+    createDefaultContext() {
+        return {
+            preferences: {
+                communication_style: 'professional',
+                update_frequency: 'daily',
+                priority_metrics: ['reply_rate', 'open_rate', 'lead_quality']
+            },
+            current_goals: [],
+            active_campaigns: [],
+            important_leads: [],
+            last_interaction: new Date()
+        };
+    }
+
+    async updateGoals(userId, goals) {
+        const context = await this.getContext(userId);
+        context.current_goals = goals;
+        await this.saveContext(userId, context);
+    }
+
+    async trackInteraction(userId, interaction) {
+        const context = await this.getContext(userId);
+        
+        // Update based on interaction
+        if (interaction.mentioned_leads) {
+            context.important_leads = [
+                ...new Set([...context.important_leads, ...interaction.mentioned_leads])
+            ].slice(0, 20); // Keep last 20
+        }
+
+        if (interaction.campaign_id) {
+            context.active_campaigns = [
+                interaction.campaign_id,
+                ...context.active_campaigns.filter(id => id !== interaction.campaign_id)
+            ].slice(0, 10); // Keep last 10
+        }
+
+        context.last_interaction = new Date();
+        await this.saveContext(userId, context);
+    }
+}
+```
+
+## 6. Database Schema Additions
+
+```sql
+-- Conversation threads
+CREATE TABLE conversation_threads (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT NOT NULL,
+    thread_id TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    last_message_at TIMESTAMPTZ DEFAULT NOW(),
+    message_count INTEGER DEFAULT 0,
+    UNIQUE(user_id)
+);
+
+-- Scheduled tasks
+CREATE TABLE scheduled_tasks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    task_type TEXT NOT NULL,
+    description TEXT NOT NULL,
+    cron_expression TEXT NOT NULL,
+    parameters JSONB,
+    active BOOLEAN DEFAULT true,
+    created_by TEXT,
+    last_execution TIMESTAMPTZ,
+    next_execution TIMESTAMPTZ
+);
+
+-- Task execution history
+CREATE TABLE task_executions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    task_id UUID REFERENCES scheduled_tasks(id),
+    executed_at TIMESTAMPTZ DEFAULT NOW(),
+    status TEXT NOT NULL,
+    error TEXT,
+    duration_ms INTEGER
+);
+
+-- User contexts for personalization
+CREATE TABLE user_contexts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT NOT NULL UNIQUE,
+    context JSONB NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Agent notifications
+CREATE TABLE agent_notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    user_id TEXT,
+    type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    priority TEXT DEFAULT 'medium',
+    read BOOLEAN DEFAULT false,
+    actionable BOOLEAN DEFAULT false,
+    actions JSONB
+);
+```
+
+## 7. Natural Language Examples
+
+Your AI assistant will understand commands like:
+
+**Information Queries:**
+- "How many leads replied this week?"
+- "Show me the top performing campaigns"
+- "Which leads from Google haven't been contacted yet?"
+- "What's the open rate for our last campaign?"
+
+**Task Commands:**
+- "Schedule a follow-up campaign for all replied leads tomorrow at 10am"
+- "Research the latest 10 leads in depth"
+- "Send me a daily report every morning at 9am"
+- "Pause all campaigns for leads from Microsoft"
+
+**Strategic Questions:**
+- "What should I focus on today?"
+- "Which leads are most likely to convert?"
+- "How can I improve my email open rates?"
+- "What patterns do you see in successful campaigns?"
+
+**Contextual Conversations:**
+- "Remember that campaign we discussed yesterday? How's it doing?"
+- "Add those leads to my priority list"
+- "Use the same approach we used for the tech companies"
+- "What happened with that lead from Apple?"
+
+## 8. Implementation Roadmap
+
+### Phase 1: Core Assistant (Week 1)
+- Set up OpenAI Assistant API
+- Implement basic tool functions
+- Create conversation management
+
+### Phase 2: Frontend Interface (Week 2)
+- Build Next.js chat interface
+- Implement real-time messaging
+- Add quick actions and navigation
+
+### Phase 3: Proactive Behaviors (Week 3)
+- Create background workers
+- Implement notification system
+- Add scheduling capabilities
+
+### Phase 4: Context & Intelligence (Week 4)
+- Build context management
+- Add learning capabilities
+- Implement advanced analytics
+
+### Phase 5: Polish & Optimization (Week 5)
+- Enhance natural language understanding
+- Optimize response times
+- Add advanced visualizations
+
+---
+
+This architecture creates a truly intelligent assistant that feels like a knowledgeable colleague who understands your business, remembers your preferences, and proactively helps you succeed with lead generation.
