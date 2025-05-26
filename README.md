@@ -51,3 +51,28 @@ npm run dev
 ```
 
 This will start the Next.js development server on <http://localhost:3000>.
+
+## Running on Replit or other IDEs
+
+The codebase can run in any Node.js workspace such as Replit. After cloning the
+repository, install dependencies in both the root and the `frontend` directory:
+
+```bash
+npm install
+cd frontend && npm install
+```
+
+Create a `.env` file based on `.env.example` and provide all required values.
+The frontend also expects `NEXT_PUBLIC_SUPABASE_URL` and
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` which should match your Supabase credentials.
+
+To start the app, run the backend and frontend in separate terminals (or tabs):
+
+```bash
+npm start          # run the backend
+cd frontend && npm run dev  # run the Next.js interface
+```
+
+In Replit, set your environment variables in the **Secrets** panel and launch
+these two commands. The frontend will be available on the port shown in the
+Replit interface, while the backend logs will appear in its own tab.
