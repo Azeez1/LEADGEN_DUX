@@ -1,10 +1,27 @@
 const { isLeadQualified } = require('../src/utils/lead-qualification');
 const { personalize } = require('../src/services/ai/personalization');
+
+// Mock the external API clients so no real network requests are made
+jest.mock('openai', () => {
+  const mockCreate = jest.fn();
+  return {
+    OpenAI: jest.fn().mockImplementation(() => ({
+      chat: { completions: { create: mockCreate } }
+    })),
+    mockCreate
+  };
+});
+
+jest.mock('googleapis', () => {
+  const list = jest.fn();
+  return {
+    google: { customsearch: jest.fn(() => ({ cse: { list } })) },
+    list
+  };
+});
+
 const { generate } = require('../src/services/ai/openai-client');
 const { search } = require('../src/services/research/google-search');
-
-jest.mock('../src/services/ai/openai-client');
-jest.mock('../src/services/research/google-search');
 
 describe('Lead qualification', () => {
   test('returns true when lead has required and enrichment fields', () => {
@@ -41,22 +58,11 @@ describe('API integrations', () => {
   });
 
   test('OpenAI generate falls back to second model', async () => {
-    const mockCreate = jest
-      .fn()
+    const { mockCreate } = require('openai');
+    mockCreate
       .mockRejectedValueOnce(new Error('fail'))
       .mockResolvedValueOnce({ choices: [{ message: { content: 'hi' } }] });
-    generate.mockImplementation(async (prompt) => {
-      const { OpenAI } = require('openai');
-      const client = new OpenAI();
-      return await client.chat.completions.create(prompt);
-    });
-    jest.doMock('openai', () => ({
-      OpenAI: jest.fn().mockImplementation(() => ({
-        chat: { completions: { create: mockCreate } }
-      }))
-    }));
 
-    // Re-require after mocking
     const { generate: gen } = require('../src/services/ai/openai-client');
     const result = await gen('prompt');
     expect(result).toBe('hi');
@@ -64,17 +70,10 @@ describe('API integrations', () => {
   });
 
   test('Google search returns formatted results', async () => {
-    const list = jest.fn().mockResolvedValue({
+    const { list } = require('googleapis');
+    list.mockResolvedValue({
       data: { items: [{ title: 't', link: 'l', snippet: 's' }] }
     });
-    search.mockImplementation(async (query) => {
-      const { google } = require('googleapis');
-      const customsearch = google.customsearch('v1');
-      return await customsearch.cse.list({ q: query });
-    });
-    jest.doMock('googleapis', () => ({
-      google: { customsearch: jest.fn(() => ({ cse: { list } })) }
-    }));
 
     const { search: searchFn } = require('../src/services/research/google-search');
     const res = await searchFn('query');
