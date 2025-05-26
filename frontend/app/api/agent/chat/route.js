@@ -1,5 +1,10 @@
+p9skd5-codex/explain-codebase-structure-and-readiness-for-testing
 import { LeadAssistant } from '../../../../../src/services/aiAssistant';
 import { ConversationManager } from '../../../../../src/services/conversationManager';
+
+import { LeadAssistant } from '../../../../../src/services/aiAssistant.js';
+import { ConversationManager } from '../../../../../src/services/conversationManager.js';
+ main
 
 const assistant = new LeadAssistant();
 const conversationManager = new ConversationManager(assistant);
