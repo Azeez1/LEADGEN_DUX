@@ -385,7 +385,7 @@ EMAIL_SEQUENCE_STRATEGY = {
 ```json
 {
   "dependencies": {
-    "supabase": "^2.38.0",
+    "@supabase/supabase-js": "^2.38.0",
     "openai": "^4.20.0",
     "playwright": "^1.40.0",
     "bull": "^4.11.0",
