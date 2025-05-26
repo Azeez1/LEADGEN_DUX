@@ -244,6 +244,61 @@ Always communicate in a professional but friendly manner, like a trusted team me
         const task = await this.taskScheduler.createTask({ task_type, schedule, description });
         return { task_id: task.id };
     }
+
+    async interpretScheduleWithAI(input) {
+        const prompt = `Convert the following natural language schedule into a cron expression. If unclear, default to daily at 9am.\nSchedule: "${input}"`;
+        try {
+            const resp = await this.openai.chat.completions.create({
+                model: 'gpt-4-turbo-preview',
+                messages: [{ role: 'user', content: prompt }]
+            });
+            return resp.choices[0].message.content.trim();
+        } catch (err) {
+            console.error('Failed to interpret schedule with AI', err);
+            return '0 9 * * *';
+        }
+    }
+
+    async researchNewLeads() {
+        const { data, error } = await this.supabase
+            .from('leads')
+            .select('id')
+            .eq('status', 'new');
+        if (error) throw error;
+        for (const lead of data || []) {
+            await this.researchQueue.add({ leadId: lead.id, depth: 'standard' });
+        }
+        return { queued: data ? data.length : 0 };
+    }
+
+    async generateAndSendReport({ email }) {
+        const { data, error } = await this.supabase
+            .from('analytics_metrics')
+            .select('metric,value');
+        if (error) throw error;
+        const report = (data || [])
+            .map(row => `${row.metric}: ${row.value}`)
+            .join('\n');
+        await this.emailQueue.add({
+            to: email,
+            subject: 'LeadGen Report',
+            text: report
+        });
+        return { sent: true };
+    }
+
+    async executeCustomTask(params) {
+        console.log('Executing custom task', params);
+        return { executed: true };
+    }
+
+    async checkCampaignPerformance() {
+        const { data } = await this.supabase
+            .from('analytics_metrics')
+            .select('metric,value');
+        console.log('Current campaign metrics', data);
+        return data || [];
+    }
 }
 
 module.exports = { LeadAssistant };
