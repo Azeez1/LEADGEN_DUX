@@ -3,14 +3,12 @@ const { createClient } = require('@supabase/supabase-js');
 const { createQueue } = require("./queue/supabase-queue");
 const { scheduleCampaign: scheduleLeadCampaign } = require("./email/campaign-manager");
 const { TaskScheduler } = require("./taskScheduler");
- codex/limit-tool-session-time-to-20-minutes
 const { search } = require('./research/google-search');
 const { fetchDynamicContent } = require('./research/browser-automation');
 
 const ApolloScraperService = require('./research/apollo-scraper');
 const ApolloQueryParser = require('./research/apollo-query-parser');
 const apolloRateLimiter = require('../utils/apollo-rate-limiter');
-main
 
 class LeadAssistant {
     constructor() {

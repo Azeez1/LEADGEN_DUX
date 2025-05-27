@@ -1,9 +1,19 @@
 const fetch = require('node-fetch');
 
+// Allow overriding the Apify actor ID via environment variable.
+const DEFAULT_ACTOR_ID = 'code_crafter~apollo-io-scraper';
+
 class ApolloScraperService {
-    constructor() {
+    /**
+     * Create a new ApolloScraperService.
+     *
+     * @param {Object} [options]
+     * @param {string} [options.actorId] - Optional custom Apify actor ID.
+     */
+    constructor(options = {}) {
         this.apiToken = process.env.APIFY_API_TOKEN;
-        this.actorId = 'code_crafter~apollo-io-scraper';
+        // Allow providing actor ID via options or environment variable
+        this.actorId = options.actorId || process.env.APIFY_ACTOR_ID || DEFAULT_ACTOR_ID;
         this.baseApolloURL = 'https://app.apollo.io/#/people';
     }
 
@@ -51,6 +61,11 @@ class ApolloScraperService {
             totalRecords: criteria.totalRecords || 500,
             url: apolloURL
         };
+
+        // Include optional file name parameter if provided
+        if (criteria.fileName || criteria.file_name) {
+            requestBody.fileName = criteria.fileName || criteria.file_name;
+        }
 
         const response = await fetch(
             `https://api.apify.com/v2/acts/${this.actorId}/run-sync-get-dataset-items?token=${this.apiToken}`,
