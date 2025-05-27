@@ -4,12 +4,10 @@ const { personalize } = require('../src/services/ai/personalization');
 // Mock the external API clients so no real network requests are made
 jest.mock('openai', () => {
   const mockCreate = jest.fn();
-  return {
-    OpenAI: jest.fn().mockImplementation(() => ({
-      chat: { completions: { create: mockCreate } }
-    })),
-    mockCreate
-  };
+  const OpenAI = jest.fn().mockImplementation(() => ({
+    chat: { completions: { create: mockCreate } }
+  }));
+  return Object.assign(OpenAI, { OpenAI, mockCreate });
 });
 
 jest.mock('googleapis', () => {
@@ -18,6 +16,10 @@ jest.mock('googleapis', () => {
     google: { customsearch: jest.fn(() => ({ cse: { list } })) },
     list
   };
+});
+
+jest.mock('../src/services/research/browser-automation', () => {
+  return { fetchDynamicContent: jest.fn() };
 });
 
 const { generate } = require('../src/services/ai/openai-client');
@@ -78,5 +80,27 @@ describe('API integrations', () => {
     const { search: searchFn } = require('../src/services/research/google-search');
     const res = await searchFn('query');
     expect(res).toEqual([{ title: 't', link: 'l', snippet: 's' }]);
+  });
+
+  test('LeadAssistant googleSearch invokes search service', async () => {
+    const searchModule = require('../src/services/research/google-search');
+    jest.spyOn(searchModule, 'search').mockResolvedValue(['res']);
+    process.env.SUPABASE_URL = 'http://localhost';
+    process.env.SUPABASE_SERVICE_KEY = 'key';
+    const { LeadAssistant } = require('../src/services/aiAssistant');
+    const assistant = new LeadAssistant();
+    const result = await assistant.googleSearch({ query: 'test' });
+    expect(result).toEqual(['res']);
+  });
+
+  test('LeadAssistant browserUse invokes browser automation', async () => {
+    const { fetchDynamicContent } = require('../src/services/research/browser-automation');
+    fetchDynamicContent.mockResolvedValue('<html></html>');
+    process.env.SUPABASE_URL = 'http://localhost';
+    process.env.SUPABASE_SERVICE_KEY = 'key';
+    const { LeadAssistant } = require('../src/services/aiAssistant');
+    const assistant = new LeadAssistant();
+    const result = await assistant.browserUse({ url: 'http://x.com' });
+    expect(result).toBe('<html></html>');
   });
 });
