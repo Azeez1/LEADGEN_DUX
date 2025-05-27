@@ -53,7 +53,10 @@ class ApolloScraperService {
         return `${this.baseApolloURL}?${queryString}`;
     }
 
-    async searchLeads(criteria) {
+    async searchLeads(criteria, options = {}) {
+        const asyncMode = options.async === true;
+        const pollInterval = options.pollInterval || 5; // seconds
+        const timeout = options.timeout || 180;
         const apolloURL = this.buildApolloURL(criteria);
         const requestBody = {
             getPersonalEmails: true,
@@ -67,20 +70,72 @@ class ApolloScraperService {
             requestBody.fileName = criteria.fileName || criteria.file_name;
         }
 
-        const response = await fetch(
-            `https://api.apify.com/v2/acts/${this.actorId}/run-sync-get-dataset-items?token=${this.apiToken}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
-            }
-        );
+        let rawResults;
 
-        if (!response.ok) {
-            throw new Error(`Apollo scraper failed: ${response.statusText}`);
+        if (asyncMode) {
+            // Start asynchronous run
+            const startRes = await fetch(
+                `https://api.apify.com/v2/acts/${this.actorId}/runs?token=${this.apiToken}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                }
+            );
+
+            if (!startRes.ok) {
+                throw new Error(`Apollo scraper failed: ${startRes.statusText}`);
+            }
+
+            const startData = await startRes.json();
+            const runId = startData.data?.id || startData.id;
+            const endTime = Date.now() + timeout * 1000;
+            let runData;
+            while (Date.now() < endTime) {
+                await this.wait(pollInterval);
+                const runRes = await fetch(
+                    `https://api.apify.com/v2/actor-runs/${runId}?token=${this.apiToken}`
+                );
+                if (!runRes.ok) {
+                    throw new Error(`Apollo run check failed: ${runRes.statusText}`);
+                }
+                runData = await runRes.json();
+                const status = runData.data?.status || runData.status;
+                if (status === 'SUCCEEDED') break;
+                if (status === 'FAILED') {
+                    throw new Error('Apollo scraper run failed');
+                }
+            }
+
+            const finalStatus = runData.data?.status || runData.status;
+            if (finalStatus !== 'SUCCEEDED') {
+                throw new Error('Apollo scraper run timed out');
+            }
+            const datasetId = runData.data?.defaultDatasetId || runData.defaultDatasetId;
+            const datasetRes = await fetch(
+                `https://api.apify.com/v2/datasets/${datasetId}/items?token=${this.apiToken}`
+            );
+            if (!datasetRes.ok) {
+                throw new Error(`Apollo dataset fetch failed: ${datasetRes.statusText}`);
+            }
+            rawResults = await datasetRes.json();
+        } else {
+            const response = await fetch(
+                `https://api.apify.com/v2/acts/${this.actorId}/run-sync-get-dataset-items?token=${this.apiToken}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Apollo scraper failed: ${response.statusText}`);
+            }
+
+            rawResults = await response.json();
         }
 
-        const rawResults = await response.json();
         const processed = this.extractInfo(rawResults);
         return processed.filter(l => l.emailStatus === 'verified');
     }
