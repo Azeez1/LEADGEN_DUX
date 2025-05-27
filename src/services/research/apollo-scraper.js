@@ -1,4 +1,5 @@
 const fetch = require('node-fetch');
+const logger = require('../../utils/logger');
 
 // Allow overriding the Apify actor ID via environment variable.
 const DEFAULT_ACTOR_ID = 'code_crafter~apollo-io-scraper';
@@ -58,6 +59,7 @@ class ApolloScraperService {
         const pollInterval = options.pollInterval || 5; // seconds
         const timeout = options.timeout || 180;
         const apolloURL = this.buildApolloURL(criteria);
+        logger.info(`Launching Apollo scraper. async=${asyncMode}`);
         const requestBody = {
             getPersonalEmails: true,
             getWorkEmails: true,
@@ -74,6 +76,7 @@ class ApolloScraperService {
 
         if (asyncMode) {
             // Start asynchronous run
+            logger.info('Starting asynchronous Apify actor run');
             const startRes = await fetch(
                 `https://api.apify.com/v2/acts/${this.actorId}/runs?token=${this.apiToken}`,
                 {
@@ -84,11 +87,13 @@ class ApolloScraperService {
             );
 
             if (!startRes.ok) {
+                logger.error(`Actor start failed with status ${startRes.status}`);
                 throw new Error(`Apollo scraper failed: ${startRes.statusText}`);
             }
 
             const startData = await startRes.json();
             const runId = startData.data?.id || startData.id;
+            logger.info(`Run started with ID ${runId}`);
             const endTime = Date.now() + timeout * 1000;
             let runData;
             while (Date.now() < endTime) {
@@ -97,29 +102,35 @@ class ApolloScraperService {
                     `https://api.apify.com/v2/actor-runs/${runId}?token=${this.apiToken}`
                 );
                 if (!runRes.ok) {
+                    logger.error(`Run status check failed with ${runRes.status}`);
                     throw new Error(`Apollo run check failed: ${runRes.statusText}`);
                 }
                 runData = await runRes.json();
                 const status = runData.data?.status || runData.status;
                 if (status === 'SUCCEEDED') break;
                 if (status === 'FAILED') {
+                    logger.error('Apollo scraper run failed');
                     throw new Error('Apollo scraper run failed');
                 }
             }
 
             const finalStatus = runData.data?.status || runData.status;
             if (finalStatus !== 'SUCCEEDED') {
+                logger.error('Apollo scraper run timed out');
                 throw new Error('Apollo scraper run timed out');
             }
             const datasetId = runData.data?.defaultDatasetId || runData.defaultDatasetId;
+            logger.info(`Fetching dataset ${datasetId}`);
             const datasetRes = await fetch(
                 `https://api.apify.com/v2/datasets/${datasetId}/items?token=${this.apiToken}`
             );
             if (!datasetRes.ok) {
+                logger.error(`Dataset fetch failed with ${datasetRes.status}`);
                 throw new Error(`Apollo dataset fetch failed: ${datasetRes.statusText}`);
             }
             rawResults = await datasetRes.json();
         } else {
+            logger.info('Running synchronous Apify actor');
             const response = await fetch(
                 `https://api.apify.com/v2/acts/${this.actorId}/run-sync-get-dataset-items?token=${this.apiToken}`,
                 {
@@ -130,13 +141,16 @@ class ApolloScraperService {
             );
 
             if (!response.ok) {
+                logger.error(`Sync run failed with status ${response.status}`);
                 throw new Error(`Apollo scraper failed: ${response.statusText}`);
             }
 
             rawResults = await response.json();
+            logger.info('Synchronous run succeeded');
         }
 
         const processed = this.extractInfo(rawResults);
+        logger.info(`Fetched ${processed.length} leads`);
         return processed.filter(l => l.emailStatus === 'verified');
     }
 
