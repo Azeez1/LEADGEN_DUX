@@ -63,7 +63,7 @@ class TaskScheduler {
             parser.parseExpression(scheduleInput);
             return scheduleInput;
         } catch (error) {
-            return await this.interpretScheduleWithAI(scheduleInput);
+            return await this.assistant.interpretScheduleWithAI(scheduleInput);
         }
     }
 
