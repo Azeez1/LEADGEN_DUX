@@ -88,9 +88,10 @@ describe('API integrations', () => {
     process.env.SUPABASE_URL = 'http://localhost';
     process.env.SUPABASE_SERVICE_KEY = 'key';
     const { LeadAssistant } = require('../src/services/aiAssistant');
-    const assistant = new LeadAssistant();
+    const assistant = new LeadAssistant({ enableScheduling: false });
     const result = await assistant.googleSearch({ query: 'test' });
     expect(result).toEqual(['res']);
+    assistant.stopScheduledTasks();
   });
 
   test('LeadAssistant browserUse invokes browser automation', async () => {
@@ -99,9 +100,10 @@ describe('API integrations', () => {
     process.env.SUPABASE_URL = 'http://localhost';
     process.env.SUPABASE_SERVICE_KEY = 'key';
     const { LeadAssistant } = require('../src/services/aiAssistant');
-    const assistant = new LeadAssistant();
+    const assistant = new LeadAssistant({ enableScheduling: false });
     const result = await assistant.browserUse({ url: 'http://x.com' });
     expect(result).toBe('<html></html>');
+    assistant.stopScheduledTasks();
   });
 });
 

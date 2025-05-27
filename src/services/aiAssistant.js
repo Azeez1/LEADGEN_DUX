@@ -11,7 +11,11 @@ const ApolloQueryParser = require('./research/apollo-query-parser');
 const apolloRateLimiter = require('../utils/apollo-rate-limiter');
 
 class LeadAssistant {
-    constructor() {
+    constructor(options = {}) {
+        const defaultSchedule =
+            process.env.NODE_ENV !== 'test' &&
+            process.env.DISABLE_SCHEDULER !== 'true';
+        this.options = { enableScheduling: defaultSchedule, ...options };
         this.openai = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY
         });
@@ -23,7 +27,9 @@ class LeadAssistant {
         this.tools = this.defineTools();
         this.researchQueue = createQueue("research", this.supabase);
         this.emailQueue = createQueue("email", this.supabase);
-        this.taskScheduler = new TaskScheduler(this.supabase, this);
+        this.taskScheduler = new TaskScheduler(this.supabase, this, {
+            enable: this.options.enableScheduling
+        });
     }
 
     async initialize() {
@@ -413,6 +419,12 @@ Always communicate in a professional but friendly manner, like a trusted team me
             setTimeout(() => reject(new Error('Browser session timed out (20 min limit)')), 20 * 60 * 1000);
         });
         return await Promise.race([operation, timeout]);
+    }
+
+    stopScheduledTasks() {
+        if (this.taskScheduler) {
+            this.taskScheduler.stopAll();
+        }
     }
 }
 
