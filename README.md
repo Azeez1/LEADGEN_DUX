@@ -13,6 +13,10 @@ This repository contains a functional implementation of the **AI Lead Agent** de
    ```bash
  npm start
   ```
+4. Verify your credentials with the connectivity check:
+   ```bash
+   npm run check-env
+   ```
 
 Environment variables in `.env` configure API keys for Supabase, OpenAI,
 Google services and Gmail. See `.env.example` for all available settings.
