@@ -15,6 +15,33 @@ export default function AgentChat() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
 
+    const loadConversationHistory = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('agent_notifications')
+                .select('id, created_at, content, type, actions')
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                console.error('Failed to load history', error);
+                return;
+            }
+
+            const history = data.map((row) => ({
+                id: row.id,
+                role: row.type === 'user_message' ? 'user' : 'assistant',
+                content: row.content,
+                timestamp: row.created_at,
+                actions: row.actions || undefined,
+                type: row.type === 'agent_message' ? 'proactive' : undefined,
+            }));
+
+            setMessages(history);
+        } catch (err) {
+            console.error('Error loading history', err);
+        }
+    };
+
     useEffect(() => {
         const channel = supabase
             .channel('agent-notifications')
@@ -76,6 +103,17 @@ export default function AgentChat() {
         await sendMessage(action.prompt);
     };
 
+    const handleAction = async (action) => {
+        if (action.prompt) {
+            await sendMessage(action.prompt);
+            return;
+        }
+
+        if (action.action === 'navigate' && action.target) {
+            window.location = action.target;
+        }
+    };
+
     return (
         <div className="flex flex-col h-screen bg-gray-50">
             <div className="bg-white shadow-sm border-b px-6 py-4">
@@ -120,7 +158,7 @@ export default function AgentChat() {
                     </div>
                 )}
                 {messages.map((message) => (
-                    <Message key={message.id} message={message} />
+                    <Message key={message.id} message={message} onAction={handleAction} />
                 ))}
                 {isTyping && (
                     <div className="flex items-center space-x-2 text-gray-500">
@@ -157,7 +195,7 @@ export default function AgentChat() {
     );
 }
 
-function Message({ message }) {
+function Message({ message, onAction }) {
     const isUser = message.role === 'user';
     return (
         <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
@@ -170,7 +208,7 @@ function Message({ message }) {
                         {message.actions.map((action, idx) => (
                             <button
                                 key={idx}
-                                onClick={() => handleAction(action)}
+                                onClick={() => onAction(action)}
                                 className="block w-full text-left px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
                             >
                                 {action.label}
