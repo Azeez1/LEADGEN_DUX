@@ -3,6 +3,9 @@ const { createClient } = require('@supabase/supabase-js');
 const { createQueue } = require("./queue/supabase-queue");
 const { scheduleCampaign: scheduleLeadCampaign } = require("./email/campaign-manager");
 const { TaskScheduler } = require("./taskScheduler");
+const ApolloScraperService = require('./research/apollo-scraper');
+const ApolloQueryParser = require('./research/apollo-query-parser');
+const apolloRateLimiter = require('../utils/apollo-rate-limiter');
 
 class LeadAssistant {
     constructor() {
@@ -119,6 +122,42 @@ Always communicate in a professional but friendly manner, like a trusted team me
             {
                 type: "function",
                 function: {
+                    name: "search_apollo_leads",
+                    description: "Search for B2B leads on Apollo.io using specific criteria",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            job_title: {
+                                type: "array",
+                                items: { type: "string" },
+                                description: "Job titles to search for"
+                            },
+                            location: {
+                                type: "array",
+                                items: { type: "string" },
+                                description: "Locations in format 'City+country'"
+                            },
+                            business: {
+                                type: "array",
+                                items: { type: "string" },
+                                description: "Business or industry keywords"
+                            },
+                            totalRecords: {
+                                type: "number",
+                                description: "Maximum number of records to fetch",
+                                default: 500
+                            },
+                            natural_query: {
+                                type: "string",
+                                description: "Optional natural language query"
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                type: "function",
+                function: {
                     name: "research_lead",
                     description: "Conduct research on a specific lead",
                     parameters: {
@@ -177,6 +216,8 @@ Always communicate in a professional but friendly manner, like a trusted team me
                 return await this.scheduleCampaign(params);
             case 'get_analytics':
                 return await this.getAnalytics(params);
+            case 'search_apollo_leads':
+                return await this.searchApolloLeads(params);
             case 'research_lead':
                 return await this.researchLead(params);
             case 'set_reminder':
@@ -233,6 +274,33 @@ Always communicate in a professional but friendly manner, like a trusted team me
         const { data, error } = await this.supabase.from("analytics_metrics").select("metric,value");
         if (error) throw error;
         return data.reduce((acc, row) => { acc[row.metric] = row.value; return acc; }, {});
+    }
+
+    async searchApolloLeads(params) {
+        const apollo = new ApolloScraperService();
+        const parser = new ApolloQueryParser();
+
+        if (params.natural_query) {
+            const parsed = parser.parseNaturalLanguage(params.natural_query);
+            params = { ...parsed, ...params };
+            delete params.natural_query;
+        }
+
+        await apolloRateLimiter.enforceRateLimit();
+        const leads = await apollo.searchLeads(params);
+        const formatted = apollo.formatForDatabase(leads);
+        const stored = [];
+
+        for (const lead of formatted) {
+            const { data, error } = await this.supabase
+                .from('leads')
+                .upsert(lead, { onConflict: 'email' })
+                .select()
+                .single();
+            if (!error && data) stored.push(data);
+        }
+
+        return { found: leads.length, stored: stored.length };
     }
 
     async researchLead({ lead_id, research_depth }) {
