@@ -80,3 +80,30 @@ describe('API integrations', () => {
     expect(res).toEqual([{ title: 't', link: 'l', snippet: 's' }]);
   });
 });
+
+jest.mock('node-fetch');
+const fetch = require('node-fetch');
+
+describe('Apollo integrations', () => {
+  test('query parser extracts criteria', () => {
+    const Parser = require('../src/services/research/apollo-query-parser');
+    const parser = new Parser();
+    const criteria = parser.parseNaturalLanguage('owners in houston real estate');
+    expect(criteria.job_title).toContain('owner');
+    expect(criteria.location).toContain('Houston+united+states');
+    expect(criteria.business).toContain('Real+Estate+agency');
+  });
+
+  test('Apollo scraper builds URL and parses response', async () => {
+    fetch.mockResolvedValue({
+      ok: true,
+      json: async () => [{ first_name: 'A', last_name: 'B', email: 'a@b.c', email_status: 'verified' }]
+    });
+
+    const Apollo = require('../src/services/research/apollo-scraper');
+    const service = new Apollo();
+    const results = await service.searchLeads({ job_title: ['CEO'], location: ['Houston+united+states'] });
+    expect(results).toHaveLength(1);
+    expect(results[0].emailAddress).toBe('a@b.c');
+  });
+});
