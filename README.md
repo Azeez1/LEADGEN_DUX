@@ -51,6 +51,13 @@ npm run dev
 
 This will start the Next.js development server on <http://localhost:3000>.
 
+## Available Tools
+
+The assistant exposes additional research tools that can be invoked from the chat interface:
+
+- **google_search** – performs a Google Custom Search for a given query.
+- **browseruse** – launches a headless Playwright browser to fetch dynamic page content. Each browser session is limited to 20 minutes.
+
 ## Running on Replit or other IDEs
 
 The codebase can run in any Node.js workspace such as Replit. After cloning the

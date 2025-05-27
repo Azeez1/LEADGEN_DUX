@@ -3,9 +3,14 @@ const { createClient } = require('@supabase/supabase-js');
 const { createQueue } = require("./queue/supabase-queue");
 const { scheduleCampaign: scheduleLeadCampaign } = require("./email/campaign-manager");
 const { TaskScheduler } = require("./taskScheduler");
+ codex/limit-tool-session-time-to-20-minutes
+const { search } = require('./research/google-search');
+const { fetchDynamicContent } = require('./research/browser-automation');
+
 const ApolloScraperService = require('./research/apollo-scraper');
 const ApolloQueryParser = require('./research/apollo-query-parser');
 const apolloRateLimiter = require('../utils/apollo-rate-limiter');
+main
 
 class LeadAssistant {
     constructor() {
@@ -201,6 +206,34 @@ Always communicate in a professional but friendly manner, like a trusted team me
                         required: ["task_type", "schedule"]
                     }
                 }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "google_search",
+                    description: "Search the web using Google Custom Search",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            query: { type: "string", description: "Search query" }
+                        },
+                        required: ["query"]
+                    }
+                }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "browseruse",
+                    description: "Fetch dynamic content from a webpage via headless browser",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            url: { type: "string", description: "Page URL" }
+                        },
+                        required: ["url"]
+                    }
+                }
             }
         ];
     }
@@ -222,6 +255,10 @@ Always communicate in a professional but friendly manner, like a trusted team me
                 return await this.researchLead(params);
             case 'set_reminder':
                 return await this.setReminder(params);
+            case 'google_search':
+                return await this.googleSearch(params);
+            case 'browseruse':
+                return await this.browserUse(params);
             default:
                 throw new Error(`Unknown tool: ${name}`);
         }
@@ -366,6 +403,18 @@ Always communicate in a professional but friendly manner, like a trusted team me
             .select('metric,value');
         console.log('Current campaign metrics', data);
         return data || [];
+    }
+
+    async googleSearch({ query }) {
+        return await search(query);
+    }
+
+    async browserUse({ url }) {
+        const operation = fetchDynamicContent(url);
+        const timeout = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Browser session timed out (20 min limit)')), 20 * 60 * 1000);
+        });
+        return await Promise.race([operation, timeout]);
     }
 }
 
