@@ -1,0 +1,693 @@
+{
+  "name": "Lead_Scraping",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6e9830d3-e2cc-46f9-95ee-a04d5f93d91b",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "url": "https://api.apify.com/v2/acts/code_crafter~apollo-io-scraper/run-sync-get-dataset-items?",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "apify_api_6aWIqHS2EJaMbmmF8DcDyeQXSKudAZ0XvAtO"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"getPersonalEmails\": true,\n    \"getWorkEmails\": true,\n    \"totalRecords\": 500,\n    \"url\": \"{{ $json.finalURL }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        0
+      ],
+      "id": "26c42481-71a2-41c0-b4c6-cd6ad3a9321d",
+      "name": "Apollo Scraper"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1keSIZMYAWkLQWRtZn-e3Zw73BEVduyy8xs6kF1AZb84",
+          "mode": "list",
+          "cachedResultName": "Research",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1keSIZMYAWkLQWRtZn-e3Zw73BEVduyy8xs6kF1AZb84/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1pY5nJihyUUObA1LpbhdgANq0DSX7A9TLOTWlEr9PMBk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "LinkedIn URL": "={{ $json.linkedInURL }}",
+            "First Name": "={{ $json.firstName }}",
+            "Last Name": "={{ $json.lastName }}",
+            "Email Address": "={{ $json.emailAddress }}",
+            "Phone Number": "={{ $json.Number }}",
+            "Country ": "={{ $json.country }}",
+            "Location": "={{ $json.location }}",
+            "Industry": "={{ $json.businessIndustry }}",
+            "Company Name": "={{ $json.companyName }}",
+            "Job Title": "={{ $json.jobTitle }}",
+            "Seniority": "={{ $json[\"seniority \"] }}",
+            "Website URL": "={{ $json.websiteURL }}",
+            "Analysed": "No"
+          },
+          "matchingColumns": [
+            "LinkedIn URL"
+          ],
+          "schema": [
+            {
+              "id": "First Name",
+              "displayName": "First Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Name",
+              "displayName": "Last Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email Address",
+              "displayName": "Email Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Country ",
+              "displayName": "Country ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Industry",
+              "displayName": "Industry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company Name",
+              "displayName": "Company Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Job Title",
+              "displayName": "Job Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Seniority",
+              "displayName": "Seniority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Website URL",
+              "displayName": "Website URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LinkedIn URL",
+              "displayName": "LinkedIn URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Analysed",
+              "displayName": "Analysed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Research Report",
+              "displayName": "Research Report",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email#1 Body",
+              "displayName": "Email#1 Body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email#1 Subject",
+              "displayName": "Email#1 Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email #2 Body",
+              "displayName": "Email #2 Body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email#3 Body",
+              "displayName": "Email#3 Body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email#3 Subject",
+              "displayName": "Email#3 Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Sender Email",
+              "displayName": "Sender Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Time Zone",
+              "displayName": "Time Zone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email#1 Sent",
+              "displayName": "Email#1 Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email#2 Sent",
+              "displayName": "Email#2 Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email#3 Sent",
+              "displayName": "Email#3 Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Message ID",
+              "displayName": "Message ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Replied",
+              "displayName": "Replied",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Token",
+              "displayName": "Token",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Opted Out",
+              "displayName": "Opted Out",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1820,
+        0
+      ],
+      "id": "ec7745c9-8b26-40f0-9187-476929b33414",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FTH1vlUqZWnjTQAC",
+          "name": "Google Sheets account MARKET"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retrieve the input data from node A.\nlet inputData = $node[\"JSON\"].json;\n// If the output is an array, take the first element; otherwise, use it as is.\nif (Array.isArray(inputData)) {\n  inputData = inputData[0];\n}\n\n// Now, access the \"query\" property. \n// We expect \"query\" to be an array, so take its first element.\nconst paramsData = inputData.query[0];\n\n// Base URL for Apollo\nconst baseURL = 'https://app.apollo.io/#/people';\n\n// Array to hold each part of the query string\nconst queryParts = [];\n\n// Add static parameters\nqueryParts.push('sortByField=recommendations_score');\nqueryParts.push('sortAscending=false');\nqueryParts.push('page=1');\n\n// Helper function to process and add array parameters to queryParts\nconst addArrayParams = (paramName, values) => {\n  values.forEach(val => {\n    // Replace '+' with space then encode the value \n    // (e.g., \"sydney+australia\" -> \"sydney australia\" -> \"sydney%20australia\")\n    const decodedValue = val.replace(/\\+/g, ' ');\n    queryParts.push(`${paramName}[]=${encodeURIComponent(decodedValue)}`);\n  });\n};\n\n// Process job titles (maps to personTitles[])\nif (paramsData.job_title && Array.isArray(paramsData.job_title)) {\n  addArrayParams('personTitles', paramsData.job_title);\n}\n\n// Process locations (maps to personLocations[])\nif (paramsData.location && Array.isArray(paramsData.location)) {\n  addArrayParams('personLocations', paramsData.location);\n}\n\n// Process business keywords (maps to qOrganizationKeywordTags[])\nif (paramsData.business && Array.isArray(paramsData.business)) {\n  addArrayParams('qOrganizationKeywordTags', paramsData.business);\n}\n\n// Add static included organization keyword fields\nqueryParts.push('includedOrganizationKeywordFields[]=tags');\nqueryParts.push('includedOrganizationKeywordFields[]=name');\n\n// Combine all query parts with '&' to form the full query string\nconst queryString = queryParts.join('&');\n\n// Build the final URL\nconst finalURL = `${baseURL}?${queryString}`;\n\n// Return the output as an array of objects\nreturn [{ json: { finalURL } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "d516237c-4994-41b7-aa20-1ed46af0e735",
+      "name": "Create URL"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "336074e3-b3b9-4dde-92d7-fb5af51b8ffa",
+              "name": "firstName",
+              "value": "={{ $json.first_name }}",
+              "type": "string"
+            },
+            {
+              "id": "da8362c5-75a5-4431-847d-fd4e02112bcc",
+              "name": "emailAddress",
+              "value": "={{ $json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "3c99e0e0-4184-4e85-baa0-8bb85e4e227b",
+              "name": "linkedInURL",
+              "value": "={{ $json.linkedin_url }}",
+              "type": "string"
+            },
+            {
+              "id": "a45af1ff-7026-47a0-a42c-bdb3b27c8e3d",
+              "name": "seniority ",
+              "value": "={{ $json.seniority }}",
+              "type": "string"
+            },
+            {
+              "id": "fa551406-a981-4fbb-babc-aa78ab10010d",
+              "name": "jobTitle",
+              "value": "={{ $json.employment_history[0].title }}",
+              "type": "string"
+            },
+            {
+              "id": "2e8d8d61-bd02-4f24-91f1-707152d99806",
+              "name": "companyName",
+              "value": "={{ $json.employment_history[0].organization_name }}",
+              "type": "string"
+            },
+            {
+              "id": "1295a702-636a-48bd-8bcd-df92162237fb",
+              "name": "location",
+              "value": "={{ $json.city }}, {{ $json.state }}",
+              "type": "string"
+            },
+            {
+              "id": "0072b657-0296-4858-b190-621831943816",
+              "name": "country",
+              "value": "={{ $json.country }}",
+              "type": "string"
+            },
+            {
+              "id": "22ce107c-30ef-4abe-9fab-8d49482da87c",
+              "name": "Number",
+              "value": "={{ $json.organization.primary_phone && $json.organization.primary_phone.sanitized_number && $json.organization.primary_phone.sanitized_number ? $json.organization.primary_phone.sanitized_number : null }}",
+              "type": "string"
+            },
+            {
+              "id": "302b9529-e16b-49ce-bbb6-ae2de90fed93",
+              "name": "websiteURL",
+              "value": "={{ $json.organization_website_url }}",
+              "type": "string"
+            },
+            {
+              "id": "13026de1-0927-44f7-8388-4d525f44974d",
+              "name": "businessIndustry",
+              "value": "={{ $('JSON').item.json.query[0].business[0].replaceAll('+',' ') }}",
+              "type": "string"
+            },
+            {
+              "id": "1a8ae803-f0bd-48d5-bf85-89b91c2e9c64",
+              "name": "lastName",
+              "value": "={{ $json.last_name }}",
+              "type": "string"
+            },
+            {
+              "id": "03cb9c0d-4c05-4d00-88a4-de33e34e7c16",
+              "name": "emailStatus",
+              "value": "={{ $json.email_status }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1180,
+        0
+      ],
+      "id": "c423cf30-17be-46c1-8991-28de782916f0",
+      "name": "Extract Info"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2ecbc937-c5dc-4948-8d27-ccdb4d4a9bed",
+              "name": "output",
+              "value": "={{ $input.all().length }} new contacts have been added to the Google Sheet!",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2060,
+        0
+      ],
+      "id": "8244ab36-784c-4a52-a08b-50e03de65da9",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        2260,
+        0
+      ],
+      "id": "a9fe2459-2932-410e-8673-853adee814ee",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n\"query\": \n{{ $json.query }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ],
+      "id": "0ef5c4fe-0800-42dc-8e47-0bedec0f49c2",
+      "name": "JSON"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c49e7377-db5e-4458-bea5-9e297e19f620",
+              "leftValue": "={{ $json.emailStatus }}",
+              "rightValue": "verified",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1500,
+        0
+      ],
+      "id": "279522dc-37f4-4cc7-a285-b57f9a193181",
+      "name": "Only Keep Verified Emails "
+    },
+    {
+      "parameters": {
+        "amount": 45
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        0
+      ],
+      "id": "abd9a8e4-7a31-4e12-a164-ba420f747a91",
+      "name": "Wait",
+      "webhookId": "e58a68da-3ab4-4b3a-92f5-7142bfd559ae"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "query": "[\n {\n \"location\": [\n \"Houston+united+states\"\n ],\n \"business\": [\n \"Real+Estate+agency\"\n ],\n \"job_title\": [\n \"owner\"\n ]\n }\n ]"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo Scraper": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create URL": {
+      "main": [
+        [
+          {
+            "node": "Apollo Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Info": {
+      "main": [
+        [
+          {
+            "node": "Only Keep Verified Emails ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON": {
+      "main": [
+        [
+          {
+            "node": "Create URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only Keep Verified Emails ": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Extract Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "14179127-be3b-4e4c-8c96-077cdf549eb6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8d7e4f195bf3ce185fb2c0f9d1d679ceb85d8a160024a4c53914e80e22ccb014"
+  },
+  "id": "OemEexLstcmMQZc7",
+  "tags": []
+}
