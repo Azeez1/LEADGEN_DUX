@@ -6,8 +6,26 @@ import styles from '../styles/Home.module.css';
 export default function Home() {
   const [messages, setMessages] = useState([]);
 
-  const handleSend = (text) => {
-    setMessages([...messages, { text, sender: 'user' }]);
+  const handleSend = async (text) => {
+    // display user message immediately
+    setMessages((msgs) => [...msgs, { text, sender: 'user' }]);
+
+    try {
+      const res = await fetch('/api/agent/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message: text })
+      });
+      const data = await res.json();
+      if (data.message) {
+        setMessages((msgs) => [...msgs, { text: data.message, sender: 'assistant' }]);
+      }
+    } catch (err) {
+      console.error('Chat error', err);
+      setMessages((msgs) => [...msgs, { text: 'Error: failed to get response', sender: 'system' }]);
+    }
   };
 
   return (
