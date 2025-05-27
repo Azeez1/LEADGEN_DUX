@@ -17,7 +17,8 @@ This repository contains a functional implementation of the **AI Lead Agent** de
 Environment variables in `.env` configure API keys for Supabase, OpenAI,
 Google services and Gmail. See `.env.example` for all available settings.
 If you run a custom Apify actor for Apollo scraping, set `APIFY_ACTOR_ID`
-to the desired actor ID.
+to the desired actor ID. The Apollo scraper supports asynchronous runs by
+passing `{ async: true }` to `searchLeads`.
 
 ## Project Structure
 
