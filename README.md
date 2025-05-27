@@ -199,8 +199,105 @@ Implementation files:
 - `src/services/taskScheduler.js`
 - `src/services/contextManager.js`
 
-## 6. Database Schema Additions
+## 6. Database Schema
 ```sql
+-- Leads table
+CREATE TABLE leads (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    company TEXT,
+    title TEXT,
+    linkedin_url TEXT,
+    website_url TEXT,
+    ig_url TEXT,
+    twitter_url TEXT,
+    phone TEXT,
+    location TEXT,
+    status TEXT CHECK (status IN ('new', 'researching', 'researched', 'emailed', 'replied', 'unsubscribed', 'bounced')),
+    score INTEGER DEFAULT 0,
+    tags TEXT[],
+    source TEXT,
+    CONSTRAINT valid_email CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$')
+);
+CREATE INDEX idx_leads_status ON leads(status);
+CREATE INDEX idx_leads_email ON leads(email);
+CREATE INDEX idx_leads_created_at ON leads(created_at);
+
+-- Lead research details
+CREATE TABLE lead_research (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    tool_used TEXT NOT NULL,
+    tool_version TEXT,
+    research_data JSONB NOT NULL,
+    research_notes TEXT,
+    personalization_context TEXT,
+    data_quality_score INTEGER,
+    processing_time_ms INTEGER,
+    cost_cents INTEGER DEFAULT 0,
+    CONSTRAINT valid_tool CHECK (tool_used IN ('google_search', 'browseruse', 'apify', 'manual'))
+);
+CREATE INDEX idx_research_data ON lead_research USING GIN (research_data);
+
+-- Emails sent to leads
+CREATE TABLE email_campaigns (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
+    campaign_id UUID,
+    sent_at TIMESTAMPTZ,
+    scheduled_for TIMESTAMPTZ,
+    email_sequence INTEGER NOT NULL CHECK (email_sequence BETWEEN 1 AND 5),
+    subject TEXT NOT NULL,
+    body TEXT NOT NULL,
+    from_email TEXT NOT NULL,
+    reply_to TEXT,
+    opened BOOLEAN DEFAULT FALSE,
+    opened_at TIMESTAMPTZ,
+    clicked BOOLEAN DEFAULT FALSE,
+    clicked_at TIMESTAMPTZ,
+    replied BOOLEAN DEFAULT FALSE,
+    replied_at TIMESTAMPTZ,
+    bounced BOOLEAN DEFAULT FALSE,
+    bounce_type TEXT,
+    unsubscribed BOOLEAN DEFAULT FALSE,
+    message_id TEXT,
+    thread_id TEXT,
+    personalization_tokens JSONB,
+    ai_model_used TEXT,
+    ai_prompt_version TEXT
+);
+CREATE INDEX idx_campaigns_lead_id ON email_campaigns(lead_id);
+CREATE INDEX idx_campaigns_scheduled ON email_campaigns(scheduled_for);
+CREATE INDEX idx_campaigns_campaign_id ON email_campaigns(campaign_id);
+
+-- Email templates
+CREATE TABLE email_templates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE,
+    subject_template TEXT NOT NULL,
+    body_template TEXT NOT NULL,
+    variables TEXT[],
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- API usage tracking
+CREATE TABLE api_usage (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    timestamp TIMESTAMPTZ DEFAULT NOW(),
+    service TEXT NOT NULL,
+    endpoint TEXT,
+    tokens_used INTEGER,
+    cost_cents INTEGER,
+    lead_id UUID REFERENCES leads(id),
+    response_time_ms INTEGER,
+    error TEXT
+);
+
 -- Conversation threads
 CREATE TABLE conversation_threads (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -258,6 +355,21 @@ CREATE TABLE agent_notifications (
     read BOOLEAN DEFAULT false,
     actionable BOOLEAN DEFAULT false,
     actions JSONB
+);
+
+-- Analytics metrics
+CREATE TABLE analytics_metrics (
+    metric TEXT PRIMARY KEY,
+    value NUMERIC
+);
+
+-- Simple job queue
+CREATE TABLE jobs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    queue TEXT NOT NULL,
+    payload JSONB,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ```
 
