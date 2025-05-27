@@ -2,11 +2,17 @@ const cron = require('node-cron');
 const parser = require('cron-parser');
 
 class TaskScheduler {
-    constructor(supabase, assistant) {
+    constructor(supabase, assistant, options = {}) {
         this.supabase = supabase;
         this.assistant = assistant;
+        this.enabled =
+            options.enable !== false &&
+            process.env.NODE_ENV !== 'test' &&
+            process.env.DISABLE_SCHEDULER !== 'true';
         this.scheduledTasks = new Map();
-        this.loadScheduledTasks();
+        if (this.enabled) {
+            this.loadScheduledTasks();
+        }
     }
 
     async loadScheduledTasks() {
@@ -63,11 +69,16 @@ class TaskScheduler {
             parser.parseExpression(scheduleInput);
             return scheduleInput;
         } catch (error) {
-            return await this.interpretScheduleWithAI(scheduleInput);
+            return await this.assistant.interpretScheduleWithAI(scheduleInput);
         }
     }
 
     scheduleTask(task) {
+        if (!this.enabled) {
+            // Still track the task but do not start the cron job
+            this.scheduledTasks.set(task.id, { stop: () => {} });
+            return;
+        }
         if (this.scheduledTasks.has(task.id)) {
             this.scheduledTasks.get(task.id).stop();
         }
@@ -112,6 +123,15 @@ class TaskScheduler {
                     executed_at: new Date()
                 });
         }
+    }
+
+    stopAll() {
+        for (const job of this.scheduledTasks.values()) {
+            if (job && typeof job.stop === 'function') {
+                job.stop();
+            }
+        }
+        this.scheduledTasks.clear();
     }
 }
 
