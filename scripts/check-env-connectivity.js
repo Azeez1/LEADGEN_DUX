@@ -6,7 +6,6 @@ const fetch = require('node-fetch');
 const { OpenAI } = require('openai');
 const { google } = require('googleapis');
 const { createClient } = require('@supabase/supabase-js');
-const { Actor } = require('apify-client');
 
 async function checkSupabase() {
   const { SUPABASE_URL, SUPABASE_SERVICE_KEY, SUPABASE_ANON_KEY } = process.env;
@@ -64,7 +63,14 @@ async function checkApify() {
   }
   const actor = APIFY_ACTOR_ID || 'apify/hello-world';
   try {
-    const res = await fetch(`https://api.apify.com/v2/acts/${actor}?token=${APIFY_API_TOKEN}`);
+    const res = await fetch(
+      `https://api.apify.com/v2/acts/${actor}/run-sync-get-dataset-items?token=${APIFY_API_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      },
+    );
     if (res.ok) return { service: 'Apify', ok: true };
     return { service: 'Apify', ok: false, error: `HTTP ${res.status}` };
   } catch (err) {
