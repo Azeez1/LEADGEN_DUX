@@ -6,7 +6,6 @@ const fetch = require('node-fetch');
 const { OpenAI } = require('openai');
 const { google } = require('googleapis');
 const { createClient } = require('@supabase/supabase-js');
-const { Actor } = require('apify-client');
 
 async function checkSupabase() {
   const { SUPABASE_URL, SUPABASE_SERVICE_KEY, SUPABASE_ANON_KEY } = process.env;
