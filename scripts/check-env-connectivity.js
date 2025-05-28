@@ -15,7 +15,14 @@ async function checkSupabase() {
   }
   try {
     const baseUrl = SUPABASE_URL.replace(/\/$/, '');
-    const res = await fetch(`${baseUrl}/rest/v1/`, { method: 'GET' });
+    const key = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
+    const res = await fetch(`${baseUrl}/rest/v1/`, {
+      method: 'GET',
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+      },
+    });
     if (res.ok) return { service: 'Supabase', ok: true };
     return { service: 'Supabase', ok: false, error: `HTTP ${res.status}` };
   } catch (err) {
