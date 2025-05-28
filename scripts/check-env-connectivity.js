@@ -64,7 +64,14 @@ async function checkApify() {
   }
   const actor = APIFY_ACTOR_ID || 'apify/hello-world';
   try {
-    const res = await fetch(`https://api.apify.com/v2/acts/${actor}?token=${APIFY_API_TOKEN}`);
+    const res = await fetch(
+      `https://api.apify.com/v2/acts/${actor}/run-sync-get-dataset-items?token=${APIFY_API_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      },
+    );
     if (res.ok) return { service: 'Apify', ok: true };
     return { service: 'Apify', ok: false, error: `HTTP ${res.status}` };
   } catch (err) {
