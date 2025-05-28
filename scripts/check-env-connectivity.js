@@ -64,9 +64,20 @@ async function checkApify() {
   }
   const actor = APIFY_ACTOR_ID || 'apify/hello-world';
   try {
-    const res = await fetch(`https://api.apify.com/v2/acts/${actor}?token=${APIFY_API_TOKEN}`);
-    if (res.ok) return { service: 'Apify', ok: true };
-    return { service: 'Apify', ok: false, error: `HTTP ${res.status}` };
+    const res = await fetch(
+      `https://api.apify.com/v2/acts/${actor}/runs?token=${APIFY_API_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      },
+    );
+    if (!res.ok) return { service: 'Apify', ok: false, error: `HTTP ${res.status}` };
+    const data = await res.json();
+    if (!data.id && !data.data?.id) {
+      return { service: 'Apify', ok: false, error: 'No run ID returned' };
+    }
+    return { service: 'Apify', ok: true };
   } catch (err) {
     return { service: 'Apify', ok: false, error: err.message };
   }

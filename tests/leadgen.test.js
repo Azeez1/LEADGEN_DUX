@@ -121,14 +121,26 @@ describe('Apollo integrations', () => {
   });
 
   test('Apollo scraper builds URL and parses response', async () => {
-    fetch.mockResolvedValue({
-      ok: true,
-      json: async () => [{ first_name: 'A', last_name: 'B', email: 'a@b.c', email_status: 'verified' }]
-    });
+    fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: { id: '1' } })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: { status: 'SUCCEEDED', defaultDatasetId: 'ds1' } })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ first_name: 'A', last_name: 'B', email: 'a@b.c', email_status: 'verified' }]
+      });
 
     const Apollo = require('../src/services/research/apollo-scraper');
     const service = new Apollo();
-    const results = await service.searchLeads({ job_title: ['CEO'], location: ['Houston+united+states'] });
+    const results = await service.searchLeads(
+      { job_title: ['CEO'], location: ['Houston+united+states'] },
+      { pollInterval: 0, timeout: 1 }
+    );
     expect(results).toHaveLength(1);
     expect(results[0].emailAddress).toBe('a@b.c');
   });
