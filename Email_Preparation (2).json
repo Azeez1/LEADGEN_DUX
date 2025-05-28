@@ -1,0 +1,750 @@
+{
+  "name": "Email_Preparation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 23 * * SUN"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -660,
+        140
+      ],
+      "id": "9d1b3c7d-21fd-44a8-9958-fe76fad16d60",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1keSIZMYAWkLQWRtZn-e3Zw73BEVduyy8xs6kF1AZb84",
+          "mode": "list",
+          "cachedResultName": "Research",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1keSIZMYAWkLQWRtZn-e3Zw73BEVduyy8xs6kF1AZb84/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1keSIZMYAWkLQWRtZn-e3Zw73BEVduyy8xs6kF1AZb84/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Email#1 Sent"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -440,
+        140
+      ],
+      "id": "28a917eb-394b-4172-b26c-8a0a992b1d66",
+      "name": "Google Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FTH1vlUqZWnjTQAC",
+          "name": "Google Sheets account MARKET"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-bcbe5a.stack.tryrelevance.com/latest/studios/7bed965e-dbde-49bd-9407-f1b7adbb7c2f/trigger_webhook?project=11b40107768d-4a9c-9fce-ef46cd9a7fd1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "sk-Zjc5NWY5ZTUtYWFiMC00MzcwLWFjZDItMzE2YWExZGI1MTE1"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\"linkedin_url\":\"{{ $json[\"LinkedIn URL\"] }}\",\n\"last_x_days\":30\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "26a38b9a-8daa-4e30-a9e6-44cdcd545d14",
+      "name": "Scrape Profiles + Posts - Relevance AI1",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.perplexity.ai/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"sonar\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a researcher in a business development team. Your job is to find as much research as you can about a prospect company. You must ensure your research is for the correct company and is highly accurate. Your research must always include what the prospect company does in detail. Your research should also highlight any recent news or accomplishments from the company.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Find as much info as you can about {{ $('Scrape Profiles + Posts - Relevance AI1').last().json.linkedin_profile_details_data.company }} }} This is their website URL: {{ $('Scrape Profiles + Posts - Relevance AI1').last().json.linkedin_profile_details_data.company_website }}. Make sure your research is 100% related to them.\"\n    }\n  ]\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        0
+      ],
+      "id": "f07754bd-83c1-4975-800a-c1bd1209dcfc",
+      "name": "Research Company - Perplexity1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "a1dAUq5opufWI5Xr",
+          "name": "Perplexity"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "maxItems": 3
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -220,
+        140
+      ],
+      "id": "a6a1a6ad-a3b6-43e1-be77-37a598bbcf35",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=# Overview\nYou are part of the cold email team at Kamexa, which is an AI Automation Agency. \n\nKamexa's offers the following services: \n- Business Automation: Automating internal business processes to save time, money or reduce error. \n- Marketing Automation: Automating marketing processes like SEO, cold email etc, to generate leads with minimal investment of time or money. \n- Automation Consulting: Advice on automating various processes. \n\n# Task\nYour job is to analyse the research found on a prospect, in preparation for a cold email. \nFor each prospect you must find the following: \n\n*1. Personalization opportunity:* Cold emails perform much better when personalized. You must analyse the research found on the prospect to identify the top personalization opportunities. The personalization can be one of the following: \n- Referencing content they’ve posted [best one].\n- Mentioning a specific achievement or news related to themselves or their business.\n- personalized compliment or observation about the recipient’s work.\n- Mentioning unique aspects of their professional background. \nThe references must be highly specific that couldn't be mass-generated. Adding each reference to the cold email should feel like a 1 to 1 communication, showing we've done our research on the prospect. Aim: Reader thinks “Whoa, this is for me.” If you can't find any good personalization opportunities, then leave this blank. \n\n\n*2. Pain points and solutions:* Analyse the research to identify the prospects biggest pain points. Take into consideration their role, their company details and all other research to predict what their biggest bottle necks are. Then think of these pain points in terms of Kamexa's services - Which ones can we solve? List the 2 biggest pain points that we can help with and define the actionable solution we can offer them. Turn the actionable solution into a clear and concise offer. \n- The solutions should be specific offerings, not broad services. So instead of saying \"automation\", you must clearly define exactly what process will be automated.\n\n\n# Output Format \nYour output must be in the following format: \n\n*Personalization*\n1. Opportunity: HERE\nSupporting Evidence: HERE\n\n2. Opportunity: HERE\nSupporting Evidence: HERE\n\n(…add more as needed)\n\n⸻\n\n*Pain Points & Solutions*\n1. Pain Point: HERE\nSupporting Evidence: HERE\nOffer: HERE\n\n2. Pain Point: HERE\nSupporting Evidence: HERE\nOffer: HERE\n\nWhere supporting evidence is where you must include specific examples and evidence from the research that support your findings. You must give enough detail in the HERE sections so the reader does not need to revisit the research to create a cold email.\nThe opportunities should also be explained in detail, so the reader has enough context to understand the opportunity. So for example, instead of saying \"news A\", you must explain exactly what \"news A\" entitles and why it's significant. \n\n- Don't output anything else.\n- Replace HERE with the relevant string.\n- If there are no clear personalization opportunities, then replace HERE with null. \n- Make sure your outputs are well thought out. \n\n# Complete the analysis for the following prospect. \n\nResearch: \n\n1. Scraped LinkedIn profile in JSON format: \n{{ $('Scrape Profiles + Posts - Relevance AI1').item.json.linkedin_profile_details_data?.toJsonString() }}\n\n\n2. Company research from searching the web: \n{{ $json.choices[0].message.content }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        540,
+        0
+      ],
+      "id": "25caf47a-2058-49ca-bf8d-6b1d015fdbe1",
+      "name": "Analyse",
+      "credentials": {
+        "openAiApi": {
+          "id": "9yrgpAk5t6em7mt2",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are part of the cold email team for Dux Machina, which is an AI Automation Agency offering process automation, marketing automation and automation consulting to businesses around the world. \n\nYour job is to create 3 emails given the following info about a new cold lead: \n\n1. Research: Findings about the prospect by researching them on social media and the web. \n2. Analysis: Insights extracted from analysing the research. \n3. Tactic: Strategy to create the cold emails. \n\nYour job is to create a cold email sequence of 3 emails which will be sent 2 days apart. The tactic for each email should closely follow the instructions below, whilst the content of each email must follow the research and analysis. \n\n\n# Tactic: \n\n1. Email#1: \n\n1.1 Subject line: \n\nThe email subject line should : \n- Be maximum 4 words \n- Include the prospects name or company name (choose based on context) when possible without sounding unnatural \n- Never include spam trigger words like “free,” “guarantee,” “no obligation,” \"price,\" \"100%\" \"sale,\" and excessive punctuation, which can trigger spam filters. \n- Create curiousity without sounding spammy or like we're selling them anything \n\n\n1.2 Body\n\nStructure: The email must follow this structure closely:\na) Hook: The first 2 or 3 sentences of the email is a hook. The hook should be the personalization part of the email, capturing the prospects attention so they don't scroll. \nb) Pain point: After the hook, you must outline a pain point that was analysed about the prospect. This shouldn't sound salesy, but should be directly related to their business. The goal is to capture the readers attention, not sell them a solution. \nc) CTA: Say you've been working on solving that problem and would love to share your insights over a quick 15 minute call on {{ ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][(new Date().getDay() + 2) % 7] }}. Have a clear next step for them (for example \"Should I book you in?).\n\nGuidelines -  The email body should:\n\n- Be short (maximum 100 words).\n- Have short paragraphs (1 or 2 sentences in each) to include white space. \n- Use a conversational tone to keep the email casual. \n- Be \"You\" focused, incorporating \"you\" as much as possible.\n- Be in 6th-grade reading level with simple language. \n- Avoid images, attachments, videos, custom code, spammy words above, bullet points, punctuation.\n- Not have absurd claims (it should be believable).\n- Should always start with \"Hey {{ $('Limit').item.json['First Name'] }} ,\"\n- Should be concise. \n- Never start with formal openers like \"Hope you're doing well\" (Get right into the email every time).\n- Be nice and inviting.\n- End with \"Kind regards,\n            Dux Machina\"\n\n2. Email#3: \n\nThis email should follow the same structure and guidelines and Email#1, with the following differences: \n- It should mention a different pain point identified. \n- The call to action should include the following calendly link so the prospect can book a time that suits:https://calendly.com/sabaazeez12\n- Should be like you already know them from the previous conversation, so it shouldn't include any personalisation other than the prospects name. Can start with a variation of I was thinking about {Prospect Company Name} again and...\n\n\n3. Email#2: \nThis email will be in the same thread as email#1 and is considered a followup email (so it doesn't need a subject line).\nThe email should be a close variant of this email: \n\"Hey {{ $('Scrape Profiles + Posts - Relevance AI1').item.json.linkedin_profile_details_data.first_name }}, \nJust pushing this back up your inbox incased you missed it. \nLook forward to hearing from you. \nKind regards, \nDux Machina\" \n\n# Rules - Other things to consider: \n- Your goal is to create an engaging email that will get us a reply. Choose the best pain points and personalization opportunities from the analysis to achieve this objective. \n- You must closely follow the guidelines provided for each email. \n- Never come across condescending or rude when mentioning the pain point. \n- When using the personalization opportunities from the analysis, always mention where the info was found - usually  \"Online\" or \"LinkedIn\" (look at Supporting Evidence for this).\n\n# Output format\nYour output must follow this JSON format: \n\n{\n  \"email1\": {\n    \"subject\": \"TEXT-HERE\",\n    \"body\": \"HTML-HERE\"\n  },\n  \"email2\": {\n    \"body\": \"HTML-HERE\"\n  },\n  \"email3\": {\n    \"subject\": \"HERE\",\n    \"body\": \"HTML-HERE\"\n  }\n}\n\n- Don't wrap the output in ```json```. \n- Don't output anything else. \n- Keep the HTML code to a minimum by using only <br> for line breaks and nothing else.\n\n# Task: New prospect\nThere's a new prospect. Create the emails by considering the following details: \n\n1. Research: \nFirst name: {{ $('Limit').item.json['First Name'] }} \nCompany name: {{ $('Scrape Profiles + Posts - Relevance AI1').item.json.linkedin_profile_details_data.company }} (ignore any legal suffixes like pty ltd or llc) \n\n2. Analysis: \n{{ $json.message.content }} \n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "49e71e50-50e9-4e20-a67c-227a3f515c44",
+      "name": "Email #1 #2 #3",
+      "credentials": {
+        "openAiApi": {
+          "id": "9yrgpAk5t6em7mt2",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "=  {{ $json.message.content.replaceAll('```json','').replaceAll('```','') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1540,
+        0
+      ],
+      "id": "a90962f3-7a55-4e1b-a8d9-905378bfe9c4",
+      "name": "Emails",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1760,
+        120
+      ],
+      "id": "392902bf-a3e7-4f15-999a-fec51b1109a6",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over each item passed from the Merge node\nfor (const item of items) {\n\t// Get the country value (make sure to match the field name exactly)\n\tconst countryRaw = item.json[\"Country \"];\n\tlet country = \"\";\n\tif (countryRaw) {\n\t\tcountry = countryRaw.toLowerCase().trim();\n\t}\n\n\t// Define arrays for the different time zone groups\n\tconst t1Countries = [\"usa\", \"united states\", \"canada\"];\n\tconst europeanCountries = [\n\t\t\"albania\", \"andorra\", \"armenia\", \"austria\", \"azerbaijan\", \"belarus\", \"belgium\",\n\t\t\"bosnia and herzegovina\", \"bulgaria\", \"croatia\", \"cyprus\", \"czech republic\", \"czechia\",\n\t\t\"denmark\", \"estonia\", \"finland\", \"france\", \"georgia\", \"germany\", \"greece\", \"hungary\",\n\t\t\"iceland\", \"ireland\", \"italy\", \"kosovo\", \"latvia\", \"liechtenstein\", \"lithuania\",\n\t\t\"luxembourg\", \"malta\", \"moldova\", \"monaco\", \"montenegro\", \"netherlands\", \"north macedonia\",\n\t\t\"norway\", \"poland\", \"portugal\", \"romania\", \"russia\", \"san marino\", \"serbia\", \"slovakia\",\n\t\t\"slovenia\", \"spain\", \"sweden\", \"switzerland\", \"turkey\", \"ukraine\", \"united kingdom\",\n\t\t\"vatican city\"\n\t];\n\tconst t3Countries = [\"australia\", \"new zealand\"];\n\n\t// Determine and populate the Time Zone based on the country value\n\tif (t1Countries.includes(country)) {\n\t\titem.json[\"Time Zone\"] = \"T1\";\n\t} else if (europeanCountries.includes(country)) {\n\t\titem.json[\"Time Zone\"] = \"T2\";\n\t} else if (t3Countries.includes(country)) {\n\t\titem.json[\"Time Zone\"] = \"T3\";\n\t} else {\n\t\t// For any other country not defined above, assign T4.\n\t\t// If you want to limit to T1, T2, or T3 only, you can decide to leave it blank or assign a default value.\n\t\titem.json[\"Time Zone\"] = \"T4\";\n\t}\n}\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        120
+      ],
+      "id": "1c139e65-1550-441d-89c2-42c1b4e0a9fc",
+      "name": "Time Zone"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Array of sender emails to rotate through\nconst senderEmails = [\n  \"aoseni@duxvitaecapital.com\",\n];\n\n// Get all input items from the Time Zone node\nconst items = $input.all();\n\n// Process each item\nfor (let i = 0; i < items.length; i++) {\n  // Calculate which email to use based on position (cycling through the array)\n  const emailIndex = i % senderEmails.length;\n  \n  // Assign the sender email to the current item\n  items[i].json[\"Sender Email\"] = senderEmails[emailIndex];\n}\n\n// Return the updated items\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        120
+      ],
+      "id": "4b0f3652-0722-4a47-a2ad-fd807939ea7c",
+      "name": "Sender Email"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1keSIZMYAWkLQWRtZn-e3Zw73BEVduyy8xs6kF1AZb84",
+          "mode": "list",
+          "cachedResultName": "Research",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1keSIZMYAWkLQWRtZn-e3Zw73BEVduyy8xs6kF1AZb84/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1keSIZMYAWkLQWRtZn-e3Zw73BEVduyy8xs6kF1AZb84/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "LinkedIn URL": "={{ $json[\"LinkedIn URL\"] }}",
+            "Research Report": "={{ $('Analyse').item.json.message.content.replaceAll('\\n','<br>') }}",
+            "Email#1 Body": "={{ $json.email1.body.replaceAll('\\n','<br>') }}",
+            "Email#1 Subject": "={{ $json.email1.subject }}",
+            "Email #2 Body": "={{ $json.email2.body.replaceAll('\\n','<br>') }}",
+            "Email#3 Body": "={{ $json.email3.body.replaceAll('\\n','<br>') }}",
+            "Email#3 Subject": "={{ $json.email3.subject }}",
+            "Sender Email": "={{ $json['Sender Email'] }}",
+            "Time Zone": "={{ $json['Time Zone'] }}",
+            "Replied": "No",
+            "Opted Out": "No",
+            "Analysed": "Yes",
+            "Email#1 Sent": "No",
+            "Email#2 Sent": "No",
+            "Email#3 Sent": "No",
+            "Token": "={{ $json.token }}"
+          },
+          "matchingColumns": [
+            "LinkedIn URL"
+          ],
+          "schema": [
+            {
+              "id": "First Name",
+              "displayName": "First Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Name",
+              "displayName": "Last Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email Address",
+              "displayName": "Email Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Country ",
+              "displayName": "Country ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Industry",
+              "displayName": "Industry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company Name",
+              "displayName": "Company Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Job Title",
+              "displayName": "Job Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Seniority",
+              "displayName": "Seniority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Website URL",
+              "displayName": "Website URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LinkedIn URL",
+              "displayName": "LinkedIn URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Analysed",
+              "displayName": "Analysed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Research Report",
+              "displayName": "Research Report",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email#1 Body",
+              "displayName": "Email#1 Body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email#1 Subject",
+              "displayName": "Email#1 Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email #2 Body",
+              "displayName": "Email #2 Body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email#3 Body",
+              "displayName": "Email#3 Body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email#3 Subject",
+              "displayName": "Email#3 Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sender Email",
+              "displayName": "Sender Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Time Zone",
+              "displayName": "Time Zone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email#1 Sent",
+              "displayName": "Email#1 Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email#2 Sent",
+              "displayName": "Email#2 Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email#3 Sent",
+              "displayName": "Email#3 Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Message ID",
+              "displayName": "Message ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Replied",
+              "displayName": "Replied",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Token",
+              "displayName": "Token",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Opted Out",
+              "displayName": "Opted Out",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2860,
+        120
+      ],
+      "id": "644fd90c-86fb-472e-b958-51eb0c48ff10",
+      "name": "Google Sheets2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FTH1vlUqZWnjTQAC",
+          "name": "Google Sheets account MARKET"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop through each item in the input\nfor (let i = 0; i < items.length; i++) {\n  // Calculate the batch value (B1, B2, B3, cycling)\n  const batchNumber = (i % 3) + 1;\n  \n  // Update the Batch field\n  items[i].json.Batch = `B${batchNumber}`;\n}\n\n// Return the updated items\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2100,
+        580
+      ],
+      "id": "5beaab75-0e46-4350-8062-8f00a70415cf",
+      "name": "Batch"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Function to generate a random 6-digit number\nfunction generateRandomToken() {\n  return Math.floor(100000 + Math.random() * 900000);\n}\n\n// Process each item from the Sender Email node\nfor (let i = 0; i < items.length; i++) {\n  // Add the token parameter to each item\n  items[i].json.token = generateRandomToken();\n}\n\n// Return the modified items\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2560,
+        120
+      ],
+      "id": "c697614b-587a-470a-9c31-661eac77068e",
+      "name": "Opt Out Token"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Profiles + Posts - Relevance AI1": {
+      "main": [
+        [
+          {
+            "node": "Research Company - Perplexity1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Company - Perplexity1": {
+      "main": [
+        [
+          {
+            "node": "Analyse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets1": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Scrape Profiles + Posts - Relevance AI1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Analyse": {
+      "main": [
+        [
+          {
+            "node": "Email #1 #2 #3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email #1 #2 #3": {
+      "main": [
+        [
+          {
+            "node": "Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Emails": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Time Zone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Time Zone": {
+      "main": [
+        [
+          {
+            "node": "Sender Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sender Email": {
+      "main": [
+        [
+          {
+            "node": "Opt Out Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Opt Out Token": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e11ee1ce-f477-409e-a1e8-e0fd2456d554",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8d7e4f195bf3ce185fb2c0f9d1d679ceb85d8a160024a4c53914e80e22ccb014"
+  },
+  "id": "ThSJMSdNWNcqzp4B",
+  "tags": []
+}
