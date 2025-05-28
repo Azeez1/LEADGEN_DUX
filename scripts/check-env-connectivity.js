@@ -6,7 +6,6 @@ const fetch = require('node-fetch');
 const { OpenAI } = require('openai');
 const { google } = require('googleapis');
 const { createClient } = require('@supabase/supabase-js');
-const { Actor } = require('apify-client');
 
 async function checkSupabase() {
   const { SUPABASE_URL, SUPABASE_SERVICE_KEY, SUPABASE_ANON_KEY } = process.env;
@@ -65,19 +64,28 @@ async function checkApify() {
   const actor = APIFY_ACTOR_ID || 'apify/hello-world';
   try {
     const res = await fetch(
+ ylcn8h-codex/ensure-apify-triggers-actor-properly
       `https://api.apify.com/v2/acts/${actor}/runs?token=${APIFY_API_TOKEN}`,
+
+      `https://api.apify.com/v2/acts/${actor}/run-sync-get-dataset-items?token=${APIFY_API_TOKEN}`,
+ main
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       },
     );
+ ylcn8h-codex/ensure-apify-triggers-actor-properly
     if (!res.ok) return { service: 'Apify', ok: false, error: `HTTP ${res.status}` };
     const data = await res.json();
     if (!data.id && !data.data?.id) {
       return { service: 'Apify', ok: false, error: 'No run ID returned' };
     }
     return { service: 'Apify', ok: true };
+
+    if (res.ok) return { service: 'Apify', ok: true };
+    return { service: 'Apify', ok: false, error: `HTTP ${res.status}` };
+ main
   } catch (err) {
     return { service: 'Apify', ok: false, error: err.message };
   }
