@@ -14,7 +14,8 @@ async function checkSupabase() {
     return { service: 'Supabase', ok: false, error: 'Missing SUPABASE_URL or key' };
   }
   try {
-    const res = await fetch(SUPABASE_URL, { method: 'GET' });
+    const baseUrl = SUPABASE_URL.replace(/\/$/, '');
+    const res = await fetch(`${baseUrl}/rest/v1/`, { method: 'GET' });
     if (res.ok) return { service: 'Supabase', ok: true };
     return { service: 'Supabase', ok: false, error: `HTTP ${res.status}` };
   } catch (err) {
