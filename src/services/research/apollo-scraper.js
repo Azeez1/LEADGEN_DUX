@@ -56,7 +56,9 @@ class ApolloScraperService {
 
     async searchLeads(criteria, options = {}) {
         const asyncMode = options.async === true;
-        const pollInterval = options.pollInterval || 5; // seconds
+        const pollInterval = options.pollInterval !== undefined
+            ? options.pollInterval
+            : (process.env.NODE_ENV === 'test' ? 0 : 5); // seconds
         const timeout = options.timeout || 180;
         const apolloURL = this.buildApolloURL(criteria);
         logger.info(`Launching Apollo scraper. async=${asyncMode}`);
@@ -74,9 +76,7 @@ class ApolloScraperService {
 
         let rawResults;
 
-        if (asyncMode) {
-            // Start asynchronous run
-            logger.info('Starting asynchronous Apify actor run');
+        const startRun = async () => {
             const startRes = await fetch(
                 `https://api.apify.com/v2/acts/${this.actorId}/runs?token=${this.apiToken}`,
                 {
@@ -92,7 +92,12 @@ class ApolloScraperService {
             }
 
             const startData = await startRes.json();
-            const runId = startData.data?.id || startData.id;
+            return startData.data?.id || startData.id;
+        };
+
+        if (asyncMode) {
+            logger.info('Starting asynchronous Apify actor run');
+            const runId = await startRun();
             logger.info(`Run started with ID ${runId}`);
             const endTime = Date.now() + timeout * 1000;
             let runData;
@@ -130,23 +135,43 @@ class ApolloScraperService {
             }
             rawResults = await datasetRes.json();
         } else {
-            logger.info('Running synchronous Apify actor');
-            const response = await fetch(
-                `https://api.apify.com/v2/acts/${this.actorId}/run-sync-get-dataset-items?token=${this.apiToken}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody)
+            logger.info('Running Apify actor and waiting for results');
+            const runId = await startRun();
+            const endTime = Date.now() + timeout * 1000;
+            let runData;
+            while (Date.now() < endTime) {
+                await this.wait(pollInterval);
+                const runRes = await fetch(
+                    `https://api.apify.com/v2/actor-runs/${runId}?token=${this.apiToken}`
+                );
+                if (!runRes.ok) {
+                    logger.error(`Run status check failed with ${runRes.status}`);
+                    throw new Error(`Apollo run check failed: ${runRes.statusText}`);
                 }
-            );
-
-            if (!response.ok) {
-                logger.error(`Sync run failed with status ${response.status}`);
-                throw new Error(`Apollo scraper failed: ${response.statusText}`);
+                runData = await runRes.json();
+                const status = runData.data?.status || runData.status;
+                if (status === 'SUCCEEDED') break;
+                if (status === 'FAILED') {
+                    logger.error('Apollo scraper run failed');
+                    throw new Error('Apollo scraper run failed');
+                }
             }
 
-            rawResults = await response.json();
-            logger.info('Synchronous run succeeded');
+            const finalStatus = runData.data?.status || runData.status;
+            if (finalStatus !== 'SUCCEEDED') {
+                logger.error('Apollo scraper run timed out');
+                throw new Error('Apollo scraper run timed out');
+            }
+            const datasetId = runData.data?.defaultDatasetId || runData.defaultDatasetId;
+            logger.info(`Fetching dataset ${datasetId}`);
+            const datasetRes = await fetch(
+                `https://api.apify.com/v2/datasets/${datasetId}/items?token=${this.apiToken}`
+            );
+            if (!datasetRes.ok) {
+                logger.error(`Dataset fetch failed with ${datasetRes.status}`);
+                throw new Error(`Apollo dataset fetch failed: ${datasetRes.statusText}`);
+            }
+            rawResults = await datasetRes.json();
         }
 
         const processed = this.extractInfo(rawResults);
