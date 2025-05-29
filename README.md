@@ -18,6 +18,8 @@ This repository contains a functional implementation of the **AI Lead Agent** de
    npm run check-env
    ```
 
+- `npm test` – runs Jest unit tests.
+
 Environment variables in `.env` configure API keys for Supabase, OpenAI,
 Google services and Gmail. See `.env.example` for all available settings.
 If you run a custom Apify actor for Apollo scraping, set `APIFY_ACTOR_ID`
